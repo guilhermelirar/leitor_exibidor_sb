@@ -9,9 +9,12 @@ typedef uint32_t u4;
 
 u4 get_magic(FILE* file) {
   u4 ans = 0;
-  for (int i = 0; (i < 4) && !feof(file); i++) {
+  u4 byte;
+  for (int i = 0; i < 4; i++) {
+    byte = fgetc(file);
+    if (byte == (u1)EOF) return ans;
     ans <<= 8;
-    ans |= fgetc(file);
+    ans |= byte;
   }
   return ans;
 }
@@ -23,10 +26,10 @@ int main(int argc, const char **argv) {
   }
 
   const char* filepath = argv[1];
-  FILE *file =  fopen(filepath, "r");
+  FILE *file =  fopen(filepath, "rb");
 
   if (file == NULL) {
-    printf("File \"%s\" could not be open\n", filepath);
+    perror("fopen");
     return 1;
   }
 
