@@ -50,6 +50,7 @@ int main(int argc, const char **argv) {
   
   class.minor_version = read_u2(file);
   class.major_version = read_u2(file);
+  class.constant_pool_count = read_u2(file);
 
   printclass(&class, stdout);
 
