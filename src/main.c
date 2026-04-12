@@ -1,5 +1,6 @@
 #include "stdio.h"
 #include <stdint.h>
+#include "test.h"
 
 #define MAGIC 0xCAFEBABE
 
