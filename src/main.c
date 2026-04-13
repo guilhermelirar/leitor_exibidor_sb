@@ -14,7 +14,9 @@ int main(int argc, const char **argv) {
 
   const char* filepath = argv[1];
   
-  class = load_class(filepath); 
+  class = load_class(filepath);
+  if (!class) return 1;
+
   printclass(class, stdout);
   free_classfile(class);
 

@@ -1,5 +1,6 @@
 #include "loader.h"
 #include "classfile.h"
+#include <stdio.h>
 #include <stdlib.h>
   
 u2 read_u2(FILE *file) {
@@ -8,7 +9,7 @@ u2 read_u2(FILE *file) {
 
     if (high == EOF || low == EOF) {
         fprintf(stderr, "EOF reached\n");
-        exit(1);
+        return 0;
     }
 
     return ((u2)high << 8) | (u2)low;
@@ -22,40 +23,66 @@ u4 read_u4(FILE* file) {
 }
 
 ClassFile *load_class(const char *filepath) {
-  ClassFile* class = (ClassFile*)malloc(sizeof(ClassFile)); // malloc #1
-  class->constant_pool = NULL;
-
   FILE *file =  fopen(filepath, "rb");
+  ClassFile* cf = NULL;
 
   if (file == NULL) {
     perror("fopen");
-    free_classfile(class);
-    exit(1);
+    goto cleanup;
   }
-
-  class->magic = read_u4(file);
   
-  if (class->magic != (u4)MAGIC) {
+  cf = (ClassFile*)malloc(sizeof(ClassFile)); // malloc #1
+  cf->constant_pool = NULL;
+  cf->magic = read_u4(file);
+  
+  if (cf->magic != (u4)MAGIC) {
     printf("File \"%s\" doesn't contain magic.\n"
-        "  Expected: %X\n  Got: %X\n", filepath, MAGIC, class->magic);
-    fclose(file);
-    free_classfile(class);
-    exit(1);
+        "  Expected: %X\n  Got: %X\n", filepath, MAGIC, cf->magic);
+    goto cleanup;
   } 
 
-  class->minor_version = read_u2(file);
-  class->major_version = read_u2(file);
-  class->constant_pool_count = read_u2(file);
+  cf->minor_version = read_u2(file);
+  cf->major_version = read_u2(file);
+  cf->constant_pool_count = read_u2(file);
  
-  class->constant_pool = (cp_info*)malloc(sizeof(cp_info) * 
-      (class->constant_pool_count-1)); // malloc #2
+  cf->constant_pool = (cp_info*)malloc(sizeof(cp_info) * 
+      (cf->constant_pool_count)); // malloc #2
 
   fclose(file);
-  return class;
+  return cf;
+
+cleanup:
+  if (file) fclose(file);
+  if (cf) free_classfile(cf);
+  return NULL;
 }
 
-void free_classfile(ClassFile* classfile) {
-  // TMP
-  if (classfile->constant_pool) free(classfile->constant_pool); 
-  free(classfile); // free #1
+void free_classfile(ClassFile* cf) {
+  if (cf == NULL) return;
+  if (cf->constant_pool) {
+    free(cf->constant_pool);
+    cf->constant_pool = NULL;
+  }
+  free(cf);
+}
+
+int read_constant_pool(FILE *file, ClassFile *cf) {
+  // assume: cursor logo após constant_pool_count
+  cp_info* entry;
+  for (int i = 1; i < cf->constant_pool_count; i++) {
+    entry = &cf->constant_pool[i];
+    entry->tag = (u1)fgetc(file);
+    
+    switch (entry->tag) {
+      case CONSTANT_Class:
+        entry->info.class_info.name_index = read_u2(file);  
+        break;
+      default:
+        fprintf(stderr, "Error: constant tag \"0x%X\" not recognized\n", entry->tag);
+        return ERR_JAVA_INVALID_TAG;
+        break; 
+    }
+  }
+
+  return SUCCESS;
 }
