@@ -22,7 +22,9 @@ u4 read_u4(FILE* file) {
 }
 
 ClassFile *load_class(const char *filepath) {
-  ClassFile* class = (ClassFile*)malloc(sizeof(ClassFile));
+  ClassFile* class = (ClassFile*)malloc(sizeof(ClassFile)); // malloc #1
+  class->constant_pool = NULL;
+
   FILE *file =  fopen(filepath, "rb");
 
   if (file == NULL) {
@@ -44,12 +46,16 @@ ClassFile *load_class(const char *filepath) {
   class->minor_version = read_u2(file);
   class->major_version = read_u2(file);
   class->constant_pool_count = read_u2(file);
-  
+ 
+  class->constant_pool = (cp_info*)malloc(sizeof(cp_info) * 
+      (class->constant_pool_count-1)); // malloc #2
+
   fclose(file);
   return class;
 }
 
 void free_classfile(ClassFile* classfile) {
   // TMP
-  free(classfile);
+  if (classfile->constant_pool) free(classfile->constant_pool); 
+  free(classfile); // free #1
 }
