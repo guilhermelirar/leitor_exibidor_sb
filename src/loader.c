@@ -61,7 +61,7 @@ cleanup:
 
 void free_classfile(ClassFile* cf) {
   if (cf == NULL) return;
-if (cf->constant_pool) {
+  if (cf->constant_pool) {
     cp_info *entry; 
 
     // Libera memória de strings
