@@ -61,7 +61,7 @@ cleanup:
 
 void free_classfile(ClassFile* cf) {
   if (cf == NULL) return;
-  if (cf->constant_pool) {
+if (cf->constant_pool) {
     cp_info *entry; 
 
     // Libera memória de strings
@@ -100,6 +100,10 @@ int read_constant_pool(FILE *file, ClassFile *cf) {
         entry->info.methodref_info.name_and_type_index = read_u2(file);
         break;
       
+      case CONSTANT_InterfaceMethodref:
+        entry->info.interface_methodref_info.class_index = read_u2(file);
+        entry->info.interface_methodref_info.name_and_type_index = read_u2(file);
+        break;
       
       case CONSTANT_NameAndType:
         entry->info.name_and_type_info.name_index = read_u2(file);
@@ -112,7 +116,29 @@ int read_constant_pool(FILE *file, ClassFile *cf) {
             entry->info.utf8_info.length);
         if (entry->info.utf8_info.bytes == NULL) return ERR_CONSTANT_POOL_READ;
         break; 
-      
+     
+      case CONSTANT_String:
+        entry->info.string_info.string_index = read_u2(file);
+        break;
+
+      case CONSTANT_Integer:
+        entry->info.int_info.bytes = read_u4(file);
+        break;
+
+      case CONSTANT_Float:
+        entry->info.float_info.bytes = read_u4(file);
+        break;
+
+      case CONSTANT_Long:
+        entry->info.long_info.h_bytes = read_u4(file);
+        entry->info.long_info.l_bytes = read_u4(file);
+        break;
+
+      case CONSTANT_Double: 
+        entry->info.double_info.h_bytes = read_u4(file);
+        entry->info.double_info.l_bytes = read_u4(file);
+        break;
+
       default:
         fprintf(stderr, "Error: constant tag \"%d\" not recognized\n", entry->tag);
         return ERR_JAVA_INVALID_TAG;
