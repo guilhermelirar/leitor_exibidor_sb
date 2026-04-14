@@ -48,6 +48,8 @@ ClassFile *load_class(const char *filepath) {
   cf->constant_pool = (cp_info*)malloc(sizeof(cp_info) * 
       (cf->constant_pool_count)); // malloc #2
 
+  if (read_constant_pool(file, cf) != SUCCESS) goto cleanup; // malloc #3
+
   fclose(file);
   return cf;
 
@@ -60,10 +62,20 @@ cleanup:
 void free_classfile(ClassFile* cf) {
   if (cf == NULL) return;
   if (cf->constant_pool) {
-    free(cf->constant_pool);
+    cp_info *entry; 
+
+    // Libera memória de strings
+    for (int i = 1; i < cf->constant_pool_count; i++) {
+      entry = &cf->constant_pool[i];
+      if (entry && (entry->tag == CONSTANT_Utf8) 
+          && entry->info.utf8_info.bytes) 
+        free(entry->info.utf8_info.bytes); // free #3
+    }
+    
+    free(cf->constant_pool); // free #2
     cf->constant_pool = NULL;
   }
-  free(cf);
+  free(cf); // free #1
 }
 
 int read_constant_pool(FILE *file, ClassFile *cf) {
@@ -77,12 +89,55 @@ int read_constant_pool(FILE *file, ClassFile *cf) {
       case CONSTANT_Class:
         entry->info.class_info.name_index = read_u2(file);  
         break;
+        
+      case CONSTANT_Fieldref:
+        entry->info.fieldref_info.class_index = read_u2(file);
+        entry->info.fieldref_info.name_and_type_index = read_u2(file);
+        break;
+
+      case CONSTANT_Methodref:
+        entry->info.methodref_info.class_index = read_u2(file);
+        entry->info.methodref_info.name_and_type_index = read_u2(file);
+        break;
+      
+      
+      case CONSTANT_NameAndType:
+        entry->info.name_and_type_info.name_index = read_u2(file);
+        entry->info.name_and_type_info.descriptor_index = read_u2(file);
+        break;
+
+      case CONSTANT_Utf8:
+        entry->info.utf8_info.length = read_u2(file);
+        entry->info.utf8_info.bytes = read_utf8(file, 
+            entry->info.utf8_info.length);
+        if (entry->info.utf8_info.bytes == NULL) return ERR_CONSTANT_POOL_READ;
+        break; 
+      
       default:
-        fprintf(stderr, "Error: constant tag \"0x%X\" not recognized\n", entry->tag);
+        fprintf(stderr, "Error: constant tag \"%d\" not recognized\n", entry->tag);
         return ERR_JAVA_INVALID_TAG;
         break; 
     }
   }
 
   return SUCCESS;
+}
+
+u1* read_utf8(FILE *file, u2 length) {
+  u1 *bytes = (u1*) malloc(length + 1); // malloc #3
+    
+  if (bytes == NULL) {
+    return NULL;
+  }
+
+  size_t read_count = fread(bytes, 1, length, file);
+
+  if (read_count != length) {
+      free(bytes);
+      return NULL;
+  }
+
+  bytes[length] = '\0';
+
+  return bytes;
 }
