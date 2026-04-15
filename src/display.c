@@ -9,26 +9,44 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
 
   fprintf(file, "Constant Pool:\n");
   for (int i = 1; i < count; i++) {
+    fprintf(file, " #%d = ", i);
     entry = &cf->constant_pool[i];
 
     switch (entry->tag) {
       case CONSTANT_Class: {
         u2 name_index = entry->info.class_info.name_index;
-        cp_info* name_entry = &cf->constant_pool[name_index];
-        fprintf(file, " #%d (Class) %s\n", i, name_entry->info.utf8_info.bytes);
+        fprintf(file, "Class  (#%d) %s", 
+            name_index, cp_class_name(cf, i));
         break;
       }
-      case CONSTANT_Fieldref: 
-        break;
 
+      case CONSTANT_Fieldref: {
+        u2 class_index = entry->info.fieldref_info.class_index;
+        u2 nt_index    = entry->info.fieldref_info.name_and_type_index;
+
+        fprintf(file,
+          "Fieldref %s.%s",
+          cp_class_name(cf, class_index),
+          cp_nameandtype_name(cf, nt_index)
+        );
+        break;
+      }
+      
       case CONSTANT_Methodref:
         break;
       
       case CONSTANT_InterfaceMethodref:
         break;
       
-      case CONSTANT_NameAndType:
+      case CONSTANT_NameAndType:  {
+        u2 nt_index = entry->info.name_and_type_info.name_index;
+        u2 desc_index = entry->info.name_and_type_info.descriptor_index;
+        fprintf(file, "NameAndType  #%d:%d %s:%s", 
+            nt_index, desc_index, 
+            cp_nameandtype_name(cf, i), cp_get_utf8(cf, desc_index));
         break;
+      }
+
 
       case CONSTANT_Utf8:
         break; 
@@ -52,6 +70,7 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
         fprintf(stderr, "Error: constant tag \"%d\" not recognized\n", entry->tag);
         return;
     }
+    putc('\n', file);
   } 
 }
 
