@@ -2,6 +2,7 @@
 #define CLASSFILE
 
 #include "stdint.h"
+#include <inttypes.h>
 
 #define MAGIC 0xCAFEBABE
 
@@ -34,6 +35,7 @@
 typedef uint8_t  u1;  
 typedef uint16_t u2;
 typedef uint32_t u4;
+typedef uint64_t u8;
 
 typedef struct {
   u2 name_index; 
