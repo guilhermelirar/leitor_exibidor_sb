@@ -1,6 +1,11 @@
 public class Teste {
+    private final static int ANSWER = 42; 
+
+    private static void hello() {
+      System.out.println("Hello world!");
+    }
+
     public static void main(String[] args) {
-        int x = 42;
-        System.out.println(x);
+        System.out.println(ANSWER);
     }
 }
