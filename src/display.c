@@ -47,9 +47,10 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
         break;
       }
 
-
-      case CONSTANT_Utf8:
-        break; 
+      case CONSTANT_Utf8: {
+        fprintf(file, "Utf8 %s", cp_get_utf8(cf, i));
+        break;
+      }
      
       case CONSTANT_String:
         break;
