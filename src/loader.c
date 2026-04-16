@@ -22,62 +22,6 @@ u4 read_u4(FILE* file) {
   return ((u4)high << 16) | (u4)low;
 }
 
-ClassFile *load_class(const char *filepath) {
-  FILE *file =  fopen(filepath, "rb");
-  ClassFile* cf = NULL;
-
-  if (file == NULL) {
-    perror("fopen");
-    goto cleanup;
-  }
-  
-  cf = (ClassFile*)malloc(sizeof(ClassFile)); // malloc #1
-  cf->constant_pool = NULL;
-  cf->magic = read_u4(file);
-  
-  if (cf->magic != (u4)MAGIC) {
-    printf("File \"%s\" doesn't contain magic.\n"
-        "  Expected: %X\n  Got: %X\n", filepath, MAGIC, cf->magic);
-    goto cleanup;
-  } 
-
-  cf->minor_version = read_u2(file);
-  cf->major_version = read_u2(file);
-  cf->constant_pool_count = read_u2(file);
- 
-  cf->constant_pool = (cp_info*)malloc(sizeof(cp_info) * 
-      (cf->constant_pool_count)); // malloc #2
-
-  if (read_constant_pool(file, cf) != SUCCESS) goto cleanup; // malloc #3
-
-  fclose(file);
-  return cf;
-
-cleanup:
-  if (file) fclose(file);
-  if (cf) free_classfile(cf);
-  return NULL;
-}
-
-void free_classfile(ClassFile* cf) {
-  if (cf == NULL) return;
-  if (cf->constant_pool) {
-    cp_info *entry; 
-
-    // Libera memória de strings
-    for (int i = 1; i < cf->constant_pool_count; i++) {
-      entry = &cf->constant_pool[i];
-      if (entry && (entry->tag == CONSTANT_Utf8) 
-          && entry->info.utf8_info.bytes) 
-        free(entry->info.utf8_info.bytes); // free #3
-    }
-    
-    free(cf->constant_pool); // free #2
-    cf->constant_pool = NULL;
-  }
-  free(cf); // free #1
-}
-
 int read_constant_pool(FILE *file, ClassFile *cf) {
   // assume: cursor logo após constant_pool_count
   cp_info* entry;
@@ -166,4 +110,62 @@ u1* read_utf8(FILE *file, u2 length) {
   bytes[length] = '\0';
 
   return bytes;
+}
+
+ClassFile *load_class(const char *filepath) {
+  FILE *file =  fopen(filepath, "rb");
+  ClassFile* cf = NULL;
+
+  if (file == NULL) {
+    perror("fopen");
+    goto cleanup;
+  }
+  
+  cf = (ClassFile*)malloc(sizeof(ClassFile)); // malloc #1
+  cf->constant_pool = NULL;
+  cf->magic = read_u4(file);
+  
+  if (cf->magic != (u4)MAGIC) {
+    printf("File \"%s\" doesn't contain magic.\n"
+        "  Expected: %X\n  Got: %X\n", filepath, MAGIC, cf->magic);
+    goto cleanup;
+  } 
+
+  cf->minor_version = read_u2(file);
+  cf->major_version = read_u2(file);
+  cf->constant_pool_count = read_u2(file);
+ 
+  cf->constant_pool = (cp_info*)malloc(sizeof(cp_info) * 
+      (cf->constant_pool_count)); // malloc #2
+
+  if (read_constant_pool(file, cf) != SUCCESS) goto cleanup; // malloc #3
+
+  cf->access_flags = read_u2(file);
+
+  fclose(file);
+  return cf;
+
+cleanup:
+  if (file) fclose(file);
+  if (cf) free_classfile(cf);
+  return NULL;
+}
+
+void free_classfile(ClassFile* cf) {
+  if (cf == NULL) return;
+  if (cf->constant_pool) {
+    cp_info *entry; 
+
+    // Libera memória de strings
+    for (int i = 1; i < cf->constant_pool_count; i++) {
+      entry = &cf->constant_pool[i];
+      if (entry && (entry->tag == CONSTANT_Utf8) 
+          && entry->info.utf8_info.bytes) 
+        free(entry->info.utf8_info.bytes); // free #3
+    }
+    
+    free(cf->constant_pool); // free #2
+    cf->constant_pool = NULL;
+  }
+  free(cf); // free #1
 }

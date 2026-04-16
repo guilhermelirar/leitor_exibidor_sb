@@ -115,10 +115,23 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
   } 
 }
 
+void print_access_flags(u2 bits, FILE* file) {
+  fprintf(file, "Access Flags:\n");
+  if (bits & ACC_PUBLIC) fprintf(file, " ACC_PUBLIC\n");
+  if (bits & ACC_FINAL) fprintf(file, " ACC_FINAL\n");
+  if (bits & ACC_SUPER) fprintf(file, " ACC_SUPER\n");
+  if (bits & ACC_INTERFACE) fprintf(file, " ACC_INTERFACE\n");
+  if (bits & ACC_ABSTRACT) fprintf(file, " ACC_ABSTRACT\n");
+  if (bits & ACC_SYNTHETIC) fprintf(file, " ACC_SYNTHETHIC\n");
+  if (bits & ACC_ANNOTATION) fprintf(file, " ACC_ANNOTATION\n");
+  if (bits & ACC_ENUM) fprintf(file, " ACC_ENUM\n");
+}
+
 void printclass(const ClassFile *cf, FILE *file) {
   fprintf(file, "Magic: 0x%X\n", cf->magic);
   fprintf(file, "Version: %d.%d\n", cf->major_version, cf->minor_version);
   fprintf(file, "Constant Pool Count: %d\n", cf->constant_pool_count);
   print_class_constant_pool(cf, file);
+  print_access_flags(cf->access_flags, file);
 }
 
