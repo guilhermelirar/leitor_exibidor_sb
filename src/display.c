@@ -16,7 +16,7 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
     switch (entry->tag) {
       case CONSTANT_Class: {
         u2 name_index = entry->info.class_info.name_index;
-        fprintf(file, "Class        (#%d) %s", 
+        fprintf(file, "Class              (#%d) %s", 
             name_index, cp_class_name(cf, i));
         break;
       }
@@ -25,7 +25,7 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
         u2 class_index = entry->info.fieldref_info.class_index;
         u2 nt_index    = entry->info.fieldref_info.name_and_type_index;
 
-        fprintf(file, "Fieldref     %s.%s",
+        fprintf(file, "Fieldref           %s.%s",
           cp_class_name(cf, class_index),
           cp_nameandtype_name(cf, nt_index)
         );
@@ -36,45 +36,57 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
         u2 class_index = entry->info.methodref_info.class_index;
         u2 nt_index    = entry->info.methodref_info.name_and_type_index;
 
-        fprintf(file, "Fieldref     %s.%s",
+        fprintf(file, "Methodref          %s.%s",
           cp_class_name(cf, class_index),
           cp_nameandtype_name(cf, nt_index)
         );
         break;
       }
       
-      case CONSTANT_InterfaceMethodref:
+      case CONSTANT_InterfaceMethodref:{
+        u2 class_index = entry->info.interface_methodref_info.class_index;
+        u2 nt_index    = entry->info.interface_methodref_info.name_and_type_index;
+
+        fprintf(file, "InterfaceMethodref %s.%s",
+          cp_class_name(cf, class_index),
+          cp_nameandtype_name(cf, nt_index)
+        );
         break;
+      }
       
       case CONSTANT_NameAndType:  {
         u2 nt_index = entry->info.name_and_type_info.name_index;
         u2 desc_index = entry->info.name_and_type_info.descriptor_index;
-        fprintf(file, "NameAndType  #%d:%d %s:%s", 
+        fprintf(file, "NameAndType        #%d:%d %s:%s", 
             nt_index, desc_index, 
-            cp_nameandtype_name(cf, i), cp_get_utf8(cf, desc_index));
+            cp_nameandtype_name(cf, i), 
+            cp_get_utf8(cf, desc_index));
         break;
       }
 
       case CONSTANT_Utf8: {
-        fprintf(file, "Utf8         %s", cp_get_utf8(cf, i));
+        fprintf(file, "Utf8               %s", 
+            cp_get_utf8(cf, i));
         break;
       }
      
       case CONSTANT_String: {
         u2 utf8_idx = entry->info.string_info.string_index;
-        fprintf(file, "String       (#%d) %s", utf8_idx, cp_get_utf8(cf, utf8_idx));
+        fprintf(file, "String             (#%d) %s", 
+            utf8_idx, cp_get_utf8(cf, utf8_idx));
         break;
       }
 
       case CONSTANT_Integer:
-        fprintf(file, "Integer      %d", entry->info.int_info.bytes);
+        fprintf(file, "Integer            %d", 
+            entry->info.int_info.bytes);
         break;
 
       case CONSTANT_Float: {
         float f;
         u4 bits = entry->info.float_info.bytes;
         memcpy(&f, &bits, sizeof(float));
-        fprintf(file, "Float        %f", f);
+        fprintf(file, "Float              %f", f);
         break;
       }
       
@@ -82,7 +94,7 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
         u8 long_hl = ((u8)entry->info.long_info.h_bytes << 32) | 
           (u8)entry->info.long_info.l_bytes; 
 
-        fprintf(file, "Long         %" PRId64, long_hl);
+        fprintf(file, "Long              %" PRId64, long_hl);
         break;
       }
 
@@ -91,7 +103,7 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
         u8 bits = ((u8)entry->info.double_info.h_bytes << 32) | 
           ((u8) entry->info.double_info.l_bytes);
         memcpy(&d, &bits, sizeof(double));
-        fprintf(file, "Double       %f", d);
+        fprintf(file, "Double            %f", d);
         break;
       }
 
