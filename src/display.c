@@ -72,8 +72,8 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
 
       case CONSTANT_Float: {
         float f;
-        u4 raw = entry->info.float_info.bytes;
-        memcpy(&f, &raw, sizeof(float));
+        u4 bits = entry->info.float_info.bytes;
+        memcpy(&f, &bits, sizeof(float));
         fprintf(file, "Float        %f", f);
         break;
       }
@@ -82,12 +82,18 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
         u8 long_hl = ((u8)entry->info.long_info.h_bytes << 32) | 
           (u8)entry->info.long_info.l_bytes; 
 
-        fprintf(file, "Long      %" PRId64, long_hl);
+        fprintf(file, "Long         %" PRId64, long_hl);
         break;
       }
 
-      case CONSTANT_Double: 
+      case CONSTANT_Double: {
+        double d;
+        u8 bits = ((u8)entry->info.double_info.h_bytes << 32) | 
+          ((u8) entry->info.double_info.l_bytes);
+        memcpy(&d, &bits, sizeof(double));
+        fprintf(file, "Double       %f", d);
         break;
+      }
 
       default:
         fprintf(stderr, "Error: constant tag \"%d\" not recognized\n", entry->tag);
