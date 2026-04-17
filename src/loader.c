@@ -142,6 +142,8 @@ ClassFile *load_class(const char *filepath) {
 
   cf->access_flags = read_u2(file);
 
+  cf->this_class = read_u2(file); // Idx para CONSTANT_Class em constant_pool
+
   fclose(file);
   return cf;
 
