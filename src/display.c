@@ -139,7 +139,7 @@ void printclass(const ClassFile *cf, FILE *file) {
 
   // this_class e super class
   fprintf(file, "This class: %s\n", cp_class_name(cf, cf->this_class));
-  fprintf(file, "This class: %s\n", cp_class_name(cf, cf->super_class));
+  fprintf(file, "Super class: %s\n", cp_class_name(cf, cf->super_class));
 }
 
 
