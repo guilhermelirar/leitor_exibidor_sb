@@ -116,15 +116,39 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
 }
 
 void print_access_flags(u2 bits, FILE* file) {
-  fprintf(file, "Access Flags:\n");
-  if (bits & ACC_PUBLIC) fprintf(file, " ACC_PUBLIC\n");
-  if (bits & ACC_FINAL) fprintf(file, " ACC_FINAL\n");
-  if (bits & ACC_SUPER) fprintf(file, " ACC_SUPER\n");
-  if (bits & ACC_INTERFACE) fprintf(file, " ACC_INTERFACE\n");
-  if (bits & ACC_ABSTRACT) fprintf(file, " ACC_ABSTRACT\n");
-  if (bits & ACC_SYNTHETIC) fprintf(file, " ACC_SYNTHETHIC\n");
-  if (bits & ACC_ANNOTATION) fprintf(file, " ACC_ANNOTATION\n");
-  if (bits & ACC_ENUM) fprintf(file, " ACC_ENUM\n");
+  struct {
+    u2 mask;
+    const char *name;
+  } table[] = {
+    {ACC_PUBLIC, "ACC_PUBLIC"},
+    {ACC_FINAL, "ACC_FINAL"},
+    {ACC_SUPER, "ACC_SUPER"},
+    {ACC_INTERFACE, "ACC_INTERFACE"},
+    {ACC_ABSTRACT, "ACC_ABSTRACT"},
+    {ACC_SYNTHETIC, "ACC_SYNTHETIC"},
+    {ACC_ANNOTATION, "ACC_ANNOTATION"},
+    {ACC_ENUM, "ACC_ENUM"},
+  };
+  
+  fprintf(file, "Access Flags: ");
+  int first = 1;
+  for (int i = 0; i < N_OF_ALLOWED_FLAGS; i++) {
+    if (bits & table[i].mask) {
+      if (!first) fprintf(file, ", ");
+      if (first) first = 0;
+      fprintf(file, "%s", table[i].name);    
+    }
+  }
+  putc('\n', file);
+}
+
+void print_interfaces(const ClassFile* cf, FILE* file) {
+  fprintf(file, "Interfaces: \n");
+  for (int i = 0; i < cf->interfaces_count; i++) {
+    u2 class_idx = cf->interfaces[i];
+    fprintf(file, "  #%20d: (#%d) %s\n", i, class_idx,
+        cp_class_name(cf, class_idx));
+  }
 }
 
 void printclass(const ClassFile *cf, FILE *file) {
@@ -134,12 +158,22 @@ void printclass(const ClassFile *cf, FILE *file) {
   fprintf(file, "Constant Pool Count: %d\n",
       cf->constant_pool_count);
   
+    putc('\n', file);
   print_class_constant_pool(cf, file);
+ 
+  putc('\n', file);
   print_access_flags(cf->access_flags, file);
 
+  putc('\n', file);
   // this_class e super class
   fprintf(file, "This class: %s\n", cp_class_name(cf, cf->this_class));
   fprintf(file, "Super class: %s\n", cp_class_name(cf, cf->super_class));
+
+  // interfaces
+  fprintf(file, "Interfaces count: %d\n", cf->interfaces_count);
+  if (cf->interfaces_count) print_interfaces(cf, file);
 }
+
+
 
 

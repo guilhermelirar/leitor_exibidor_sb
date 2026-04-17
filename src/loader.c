@@ -131,6 +131,20 @@ void free_classfile(ClassFile* cf) {
   free(cf); // free #1
 }
 
+
+int read_interfaces(FILE* file, ClassFile* cf) {
+  for (int i = 0; i < cf->interfaces_count; i++) {
+    u2 idx = read_u2(file);
+
+    // Não é indice válido para constant_pool
+    if (idx < 1 || idx >= cf->constant_pool_count || 
+        cf->constant_pool[idx].tag != CONSTANT_Class) 
+      return -1;
+    cf->interfaces[i] = idx;
+  }
+  return SUCCESS;
+}
+
 ClassFile *load_class(const char *filepath) {
   FILE *file =  fopen(filepath, "rb");
   ClassFile* cf = NULL;
@@ -156,6 +170,7 @@ ClassFile *load_class(const char *filepath) {
  
   cf->constant_pool = (cp_info*)malloc(sizeof(cp_info) * 
       (cf->constant_pool_count)); // malloc #2
+  if (!cf->constant_pool) goto cleanup;
 
   if (read_constant_pool(file, cf) != SUCCESS) goto cleanup; // malloc #3
 
@@ -163,6 +178,16 @@ ClassFile *load_class(const char *filepath) {
 
   cf->this_class = read_u2(file); // Idx para CONSTANT_Class em constant_pool
   cf->super_class = read_u2(file); // ''
+
+  // Interfaces
+  cf->interfaces_count = read_u2(file);
+  cf->interfaces = (u2*)malloc(sizeof(u2) * cf->interfaces_count);
+  if (!cf->interfaces) goto cleanup;
+  read_interfaces(file, cf);
+
+  // Fields
+  cf->fields_count = read_u2(file);
+
 
   fclose(file);
   return cf;
