@@ -101,6 +101,7 @@ typedef struct {
   cp_info *constant_pool;
   u2 access_flags;
   u2 this_class;
+  u2 super_class;
 } ClassFile;
 
 // Obter strings

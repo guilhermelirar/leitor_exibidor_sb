@@ -137,7 +137,9 @@ void printclass(const ClassFile *cf, FILE *file) {
   print_class_constant_pool(cf, file);
   print_access_flags(cf->access_flags, file);
 
-  // this_class
+  // this_class e super class
   fprintf(file, "This class: %s\n", cp_class_name(cf, cf->this_class));
+  fprintf(file, "This class: %s\n", cp_class_name(cf, cf->super_class));
 }
+
 

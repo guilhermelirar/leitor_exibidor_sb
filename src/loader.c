@@ -112,6 +112,25 @@ u1* read_utf8(FILE *file, u2 length) {
   return bytes;
 }
 
+void free_classfile(ClassFile* cf) {
+  if (cf == NULL) return;
+  if (cf->constant_pool) {
+    cp_info *entry; 
+
+    // Libera memória de strings
+    for (int i = 1; i < cf->constant_pool_count; i++) {
+      entry = &cf->constant_pool[i];
+      if (entry && (entry->tag == CONSTANT_Utf8) 
+          && entry->info.utf8_info.bytes) 
+        free(entry->info.utf8_info.bytes); // free #3
+    }
+    
+    free(cf->constant_pool); // free #2
+    cf->constant_pool = NULL;
+  }
+  free(cf); // free #1
+}
+
 ClassFile *load_class(const char *filepath) {
   FILE *file =  fopen(filepath, "rb");
   ClassFile* cf = NULL;
@@ -143,6 +162,7 @@ ClassFile *load_class(const char *filepath) {
   cf->access_flags = read_u2(file);
 
   cf->this_class = read_u2(file); // Idx para CONSTANT_Class em constant_pool
+  cf->super_class = read_u2(file); // ''
 
   fclose(file);
   return cf;
@@ -151,23 +171,4 @@ cleanup:
   if (file) fclose(file);
   if (cf) free_classfile(cf);
   return NULL;
-}
-
-void free_classfile(ClassFile* cf) {
-  if (cf == NULL) return;
-  if (cf->constant_pool) {
-    cp_info *entry; 
-
-    // Libera memória de strings
-    for (int i = 1; i < cf->constant_pool_count; i++) {
-      entry = &cf->constant_pool[i];
-      if (entry && (entry->tag == CONSTANT_Utf8) 
-          && entry->info.utf8_info.bytes) 
-        free(entry->info.utf8_info.bytes); // free #3
-    }
-    
-    free(cf->constant_pool); // free #2
-    cf->constant_pool = NULL;
-  }
-  free(cf); // free #1
 }
