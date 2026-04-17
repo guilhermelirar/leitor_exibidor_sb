@@ -100,6 +100,7 @@ typedef struct {
   u2 constant_pool_count;
   cp_info *constant_pool;
   u2 access_flags;
+  u2 this_class;
 } ClassFile;
 
 // Obter strings

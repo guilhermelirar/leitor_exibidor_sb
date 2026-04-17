@@ -129,9 +129,15 @@ void print_access_flags(u2 bits, FILE* file) {
 
 void printclass(const ClassFile *cf, FILE *file) {
   fprintf(file, "Magic: 0x%X\n", cf->magic);
-  fprintf(file, "Version: %d.%d\n", cf->major_version, cf->minor_version);
-  fprintf(file, "Constant Pool Count: %d\n", cf->constant_pool_count);
+  fprintf(file, "Version: %d.%d\n", 
+      cf->major_version, cf->minor_version);
+  fprintf(file, "Constant Pool Count: %d\n",
+      cf->constant_pool_count);
+  
   print_class_constant_pool(cf, file);
   print_access_flags(cf->access_flags, file);
+
+  // this_class
+  fprintf(file, "This class: %s\n", cp_class_name(cf, cf->this_class));
 }
 
