@@ -98,7 +98,11 @@ typedef struct {
   } info;
 } cp_info;
 
-typedef struct {} attribute_info;
+typedef struct {
+  u2 attribute_name_index;
+  u4 attribute_length;
+  u1 *info;
+} attribute_info;
 
 typedef struct {
   u2 access_flags;
