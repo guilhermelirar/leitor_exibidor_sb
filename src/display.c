@@ -1,5 +1,6 @@
 #include "display.h"
 #include "classfile.h"
+#include <iterator>
 #include <stdio.h>
 #include <string.h>
 
@@ -132,7 +133,7 @@ void print_access_flags(u2 bits, FILE* file) {
   
   fprintf(file, "Access Flags: ");
   int first = 1;
-  for (int i = 0; i < N_OF_ALLOWED_FLAGS; i++) {
+  for (size_t i = 0; i < (sizeof(table) / sizeof(table[0])); i++) {
     if (bits & table[i].mask) {
       if (!first) fprintf(file, ", ");
       if (first) first = 0;

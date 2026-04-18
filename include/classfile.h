@@ -23,7 +23,6 @@
 #define CONSTANT_InvokeDynamic 18
 
 // access_flags
-#define N_OF_ALLOWED_FLAGS 8
 #define ACC_PUBLIC 0x0001
 #define ACC_FINAL 0x0010
 #define ACC_SUPER 0x0020
@@ -93,6 +92,16 @@ typedef struct {
     CONSTANT_Long_info long_info;
   } info;
 } cp_info;
+
+typedef struct {} attribute_info;
+
+typedef struct {
+  u2 access_flags;
+  u2 name_index;
+  u2 descriptor_index;
+  u2 attributes_count;
+  attribute_info *attributes;
+} field_info;
 
 typedef struct {
   u4 magic;
