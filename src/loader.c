@@ -112,6 +112,19 @@ u1* read_utf8(FILE *file, u2 length) {
   return bytes;
 }
 
+int read_interfaces(FILE* file, ClassFile* cf) {
+  for (int i = 0; i < cf->interfaces_count; i++) {
+    u2 idx = read_u2(file);
+
+    // Não é indice válido para constant_pool
+    if (idx < 1 || idx >= cf->constant_pool_count || 
+        cf->constant_pool[idx].tag != CONSTANT_Class) 
+      return -1;
+    cf->interfaces[i] = idx;
+  }
+  return SUCCESS;
+}
+
 void free_classfile(ClassFile* cf) {
   if (cf == NULL) return;
   if (cf->constant_pool) {
@@ -128,21 +141,8 @@ void free_classfile(ClassFile* cf) {
     free(cf->constant_pool); // free #2
     cf->constant_pool = NULL;
   }
+  if (cf->interfaces) free(cf->interfaces); // free #4
   free(cf); // free #1
-}
-
-
-int read_interfaces(FILE* file, ClassFile* cf) {
-  for (int i = 0; i < cf->interfaces_count; i++) {
-    u2 idx = read_u2(file);
-
-    // Não é indice válido para constant_pool
-    if (idx < 1 || idx >= cf->constant_pool_count || 
-        cf->constant_pool[idx].tag != CONSTANT_Class) 
-      return -1;
-    cf->interfaces[i] = idx;
-  }
-  return SUCCESS;
 }
 
 ClassFile *load_class(const char *filepath) {
@@ -181,7 +181,7 @@ ClassFile *load_class(const char *filepath) {
 
   // Interfaces
   cf->interfaces_count = read_u2(file);
-  cf->interfaces = (u2*)malloc(sizeof(u2) * cf->interfaces_count);
+  cf->interfaces = (u2*)malloc(sizeof(u2) * cf->interfaces_count); // malloc #4
   if (!cf->interfaces) goto cleanup;
   read_interfaces(file, cf);
 
