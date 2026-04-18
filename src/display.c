@@ -1,6 +1,5 @@
 #include "display.h"
 #include "classfile.h"
-#include <iterator>
 #include <stdio.h>
 #include <string.h>
 
@@ -122,8 +121,13 @@ void print_access_flags(u2 bits, FILE* file) {
     const char *name;
   } table[] = {
     {ACC_PUBLIC, "ACC_PUBLIC"},
+    {ACC_PRIVATE, "ACC_PRIVATE"},
+    {ACC_PROTECTED, "ACC_PROTECTED"},
+    {ACC_STATIC, "ACC_STATIC"},
     {ACC_FINAL, "ACC_FINAL"},
     {ACC_SUPER, "ACC_SUPER"},
+    {ACC_VOLATILE, "ACC_VOLATILE"},
+    {ACC_TRANSIENT, "ACC_TRANSIENT"},
     {ACC_INTERFACE, "ACC_INTERFACE"},
     {ACC_ABSTRACT, "ACC_ABSTRACT"},
     {ACC_SYNTHETIC, "ACC_SYNTHETIC"},
