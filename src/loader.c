@@ -125,6 +125,13 @@ int read_interfaces(FILE* file, ClassFile* cf) {
   return SUCCESS;
 }
 
+void read_fields(FILE *file, ClassFile *cf) {
+  field_info* field;
+  for (int i = 0; i < cf->fields_count; i++) {
+    field = &cf->fields[i]; 
+  }
+}
+
 void free_classfile(ClassFile* cf) {
   if (cf == NULL) return;
   if (cf->constant_pool) {
@@ -142,6 +149,7 @@ void free_classfile(ClassFile* cf) {
     cf->constant_pool = NULL;
   }
   if (cf->interfaces) free(cf->interfaces); // free #4
+  if (cf->fields) free (cf->fields); // free #5
   free(cf); // free #1
 }
 
@@ -187,7 +195,11 @@ ClassFile *load_class(const char *filepath) {
 
   // Fields
   cf->fields_count = read_u2(file);
-
+  cf->fields = (field_info*)malloc(
+      sizeof(field_info) *  cf->fields_count
+      ); // malloc #5
+  if (!cf->interfaces) goto cleanup;
+  read_fields(file, cf);
 
   fclose(file);
   return cf;

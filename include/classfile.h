@@ -124,6 +124,7 @@ typedef struct {
   u2 interfaces_count;
   u2 *interfaces;
   u2 fields_count;
+  field_info *fields;
 } ClassFile;
 
 // Obter strings
