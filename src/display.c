@@ -156,6 +156,48 @@ void print_interfaces(const ClassFile* cf, FILE* file) {
   }
 }
 
+void print_attributes(const ClassFile *cf, u2 count, 
+    attribute_info *attributes, FILE *file, int indent) {
+  for (int i = 0; i < count; i++) {
+    const char *name = cp_get_utf8(cf, attributes[i].attribute_name_index);
+        
+    // identação
+    for(int s=0; s<indent; s++) fprintf(file, " ");
+        
+    fprintf(file, "[%d] %s: \n", i, name);
+   
+    // identificando atributo
+    if (strcmp(name, "ConstantValue") == 0) {
+      u2 cv_index = (attributes[i].info[0] << 8) | attributes[i].info[1];
+      for(int s=0; s<indent+4; s++) fprintf(file, " ");
+      fprintf(file, "Constant Value index: #%d\n", cv_index);
+    } 
+    else if (strcmp(name, "Code") == 0) {
+      for(int s=0; s<indent+4; s++) fprintf(file, " ");
+      fprintf(file, "Bytecode length: %u\n", attributes[i].attribute_length);
+      // TODO: disassembly 
+    }
+  }
+}
+
+void print_fields(const ClassFile *cf, FILE *file) {
+    fprintf(file, "Fields (%d):\n", cf->fields_count);
+    for (int i = 0; i < cf->fields_count; i++) {
+        field_info *f = &cf->fields[i];
+        fprintf(file, "  [%d] Name: %s\n", i, cp_get_utf8(cf, f->name_index));
+        fprintf(file, "      Descriptor: %s\n", cp_get_utf8(cf, f->descriptor_index));
+        
+        // Reusa sua função de access flags (ajuste-a para não printar o prefixo se quiser)
+        fprintf(file, "      Flags: 0x%04X\n", f->access_flags); 
+        
+        if (f->attributes_count > 0) {
+            fprintf(file, "      Attributes:\n");
+            print_attributes(cf, f->attributes_count, f->attributes, file, 8);
+        }
+        fprintf(file, "\n");
+    }
+}
+
 void printclass(const ClassFile *cf, FILE *file) {
   fprintf(file, "Magic: 0x%X\n", cf->magic);
   fprintf(file, "Version: %d.%d\n", 
@@ -177,6 +219,9 @@ void printclass(const ClassFile *cf, FILE *file) {
   // interfaces
   fprintf(file, "Interfaces count: %d\n", cf->interfaces_count);
   if (cf->interfaces_count) print_interfaces(cf, file);
+
+  putc('\n', file);
+  print_fields(cf, file);
 }
 
 

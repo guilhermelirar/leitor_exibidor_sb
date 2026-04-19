@@ -1,0 +1,2 @@
+1. Reader {FILE* file, int status} para tratar erros ao final de sequencias de leitura
+2. printar os fields e atributos
