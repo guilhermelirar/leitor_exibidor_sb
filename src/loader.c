@@ -125,32 +125,38 @@ int read_interfaces(FILE* file, ClassFile* cf) {
   return SUCCESS;
 }
 
-void read_fields(FILE *file, ClassFile *cf) {
-  field_info* field;
-  for (int i = 0; i < cf->fields_count; i++) {
-    field = &cf->fields[i]; 
+
+void read_field_attributes(FILE* file, ClassFile* cf, int field_idx) 
+{
+  field_info *f = &cf->fields[field_idx];
+  for (int i = 0; i < f->attributes_count; i++) {
+    f->attributes[i].attribute_name_index = read_u2(file);
+    f->attributes[i].attribute_length = read_u4(file);
+    
+    // malloc #7
+    f->attributes[i].info = (u1*)
+      malloc(sizeof(u1) * f->attributes[i].attribute_length);
+
+    fread(f->attributes[i].info, 
+        sizeof(u1), (size_t)f->attributes[i].attribute_length, 
+        file);
   }
 }
 
-void free_classfile(ClassFile* cf) {
-  if (cf == NULL) return;
-  if (cf->constant_pool) {
-    cp_info *entry; 
-
-    // Libera memória de strings
-    for (int i = 1; i < cf->constant_pool_count; i++) {
-      entry = &cf->constant_pool[i];
-      if (entry && (entry->tag == CONSTANT_Utf8) 
-          && entry->info.utf8_info.bytes) 
-        free(entry->info.utf8_info.bytes); // free #3
-    }
+void read_fields(FILE *file, ClassFile *cf) {
+  field_info* field;
+  for (int i = 0; i < cf->fields_count; i++) {
+    field = &cf->fields[i];
+    field->access_flags = read_u2(file);
+    field->name_index = read_u2(file);
+    field->descriptor_index = read_u2(file);
+    field->attributes_count = read_u2(file);
+    field->attributes = (attribute_info*)malloc(
+        sizeof(attribute_info) * field->attributes_count); // malloc #6
+    // TODO checar caso de alocação não funcionar
+    read_field_attributes(file, cf, i);
     
-    free(cf->constant_pool); // free #2
-    cf->constant_pool = NULL;
   }
-  if (cf->interfaces) free(cf->interfaces); // free #4
-  if (cf->fields) free (cf->fields); // free #5
-  free(cf); // free #1
 }
 
 ClassFile *load_class(const char *filepath) {
@@ -209,3 +215,44 @@ cleanup:
   if (cf) free_classfile(cf);
   return NULL;
 }
+
+
+void free_constant_pool(ClassFile *cf) {
+  if (!cf->constant_pool) return; 
+  cp_info *entry; 
+
+  // Libera memória de strings
+  for (int i = 1; i < cf->constant_pool_count; i++) {
+    entry = &cf->constant_pool[i];
+    if (entry && (entry->tag == CONSTANT_Utf8) 
+        && entry->info.utf8_info.bytes) 
+      free(entry->info.utf8_info.bytes); // free #3
+  }
+    
+  free(cf->constant_pool); // free #2
+  cf->constant_pool = NULL;
+}
+
+void free_fields(ClassFile* cf) {
+  if (!cf->fields) return;
+  field_info *f;
+  for (int i = 0; i < cf->fields_count; i++) {
+    f = &cf->fields[i];
+    for (int j = 0; j < f->attributes_count; j++) {
+      if (f->attributes[j].info) 
+        free(f->attributes[j].info); // free #7
+    }
+    free(f->attributes); // free #6
+  }
+  free(cf->fields); // free #5
+  return;
+}
+
+void free_classfile(ClassFile* cf) {
+  if (cf == NULL) return;
+  if (cf->interfaces) free(cf->interfaces);      // free #4
+  if (cf->constant_pool) free_constant_pool(cf); // ->free #3,2
+  if (cf->fields) free_fields(cf);               // ->free #5,6  
+  free(cf); // free #1
+}
+
