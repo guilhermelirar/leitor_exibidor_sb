@@ -112,7 +112,13 @@ typedef struct {
   attribute_info *attributes;
 } field_info;
 
-typedef struct {} method_info;
+typedef struct {
+  u2 access_flags;
+  u2 name_index;
+  u2 descriptor_index;
+  u2 attributes_count;
+  attribute_info* attributes;
+} method_info;
 
 typedef struct {
   u4 magic;
