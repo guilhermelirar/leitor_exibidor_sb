@@ -112,6 +112,8 @@ typedef struct {
   attribute_info *attributes;
 } field_info;
 
+typedef struct {} method_info;
+
 typedef struct {
   u4 magic;
   u2 minor_version;
@@ -125,6 +127,10 @@ typedef struct {
   u2 *interfaces;
   u2 fields_count;
   field_info *fields;
+  u2 methods_count;
+  method_info* methods;
+  u2 attributes_count;
+  attribute_info* attributes;
 } ClassFile;
 
 // Obter strings
