@@ -20,11 +20,15 @@ ClassFile* load_class(const char* fpath);
 void free_classfile(ClassFile* classfile);
 void free_constant_pool(ClassFile* cf);
 void free_fields(ClassFile* cf);
+void free_methods(ClassFile* cf);
+void free_attributes(attribute_info* attributes,
+    u2 attributes_count);
 
 int read_constant_pool(FILE* file, ClassFile* classfile);
 int read_interfaces(FILE* file, ClassFile* cf);
-void read_field_attributes(FILE* file, 
-    ClassFile* cf, int field_idx);
+void read_methods(FILE* file, ClassFile* cf);
+void read_attributes(FILE* file, 
+    u2 attributes_count, attribute_info* attributes); 
 void read_fields(FILE* file, ClassFile* cf);
 u1* read_utf8(FILE* file, u2 length);
 #endif

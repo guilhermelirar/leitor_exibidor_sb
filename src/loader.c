@@ -126,19 +126,21 @@ int read_interfaces(FILE* file, ClassFile* cf) {
 }
 
 
-void read_field_attributes(FILE* file, ClassFile* cf, int field_idx) 
+void read_attributes(FILE* file, 
+    u2 attributes_count, attribute_info* attributes) 
 {
-  field_info *f = &cf->fields[field_idx];
-  for (int i = 0; i < f->attributes_count; i++) {
-    f->attributes[i].attribute_name_index = read_u2(file);
-    f->attributes[i].attribute_length = read_u4(file);
+  for (int i = 0; i < attributes_count; i++) {
+    attributes[i].attribute_name_index = read_u2(file);
+    attributes[i].attribute_length = read_u4(file);
     
     // malloc #7
-    f->attributes[i].info = (u1*)
-      malloc(sizeof(u1) * f->attributes[i].attribute_length);
+    attributes[i].info = (u1*)
+      malloc(sizeof(u1) * attributes[i].attribute_length);
 
-    fread(f->attributes[i].info, 
-        sizeof(u1), (size_t)f->attributes[i].attribute_length, 
+    if (!attributes[i].info) return; // TODO tratamento melhor
+
+    fread(attributes[i].info, 
+        sizeof(u1), (size_t)attributes[i].attribute_length, 
         file);
   }
 }
@@ -154,8 +156,20 @@ void read_fields(FILE *file, ClassFile *cf) {
     field->attributes = (attribute_info*)malloc(
         sizeof(attribute_info) * field->attributes_count); // malloc #6
     // TODO checar caso de alocação não funcionar
-    read_field_attributes(file, cf, i);
-    
+    read_attributes(file, field->attributes_count, field->attributes);
+  }
+}
+
+void read_methods(FILE *file, ClassFile *cf) {
+  method_info* m = NULL;
+  for (int i = 0; i < cf->methods_count; i++) {
+    m = &cf->methods[i];
+    m->name_index = read_u2(file); // TODO tratar out of range ou nao
+    m->descriptor_index = read_u2(file);
+    m->attributes_count = read_u2(file);
+    m->attributes = (attribute_info*)malloc(
+        sizeof(attribute_info) * m->attributes_count); // malloc #9
+    read_attributes(file, m->attributes_count, m->attributes);
   }
 }
 
@@ -207,6 +221,13 @@ ClassFile *load_class(const char *filepath) {
   if (!cf->interfaces) goto cleanup;
   read_fields(file, cf);
 
+  // Methods
+  cf->methods_count = read_u2(file);
+  cf->methods = (method_info*)malloc(
+      sizeof(method_info) * cf->methods_count
+      ); // malloc #8
+  read_methods(file, cf);
+
   fclose(file);
   return cf;
 
@@ -233,18 +254,36 @@ void free_constant_pool(ClassFile *cf) {
   cf->constant_pool = NULL;
 }
 
+void free_attributes(attribute_info* attributes, u2 attributes_count) {
+  if (!attributes) return;
+
+  for (int i = 0; i < attributes_count; i++) {
+    free(attributes[i].info);  // free #7
+  }
+
+  free(attributes);
+}
+
+void free_methods(ClassFile* cf) {
+  if (!cf->methods) return;
+  for (int i = 0; i < cf->methods_count; i++) {
+    free_attributes(cf->methods[i].attributes,
+                    cf->methods[i].attributes_count);
+  }
+  free(cf->methods); // free #5
+  return;
+}
+
+
 void free_fields(ClassFile* cf) {
   if (!cf->fields) return;
-  field_info *f;
+
   for (int i = 0; i < cf->fields_count; i++) {
-    f = &cf->fields[i];
-    for (int j = 0; j < f->attributes_count; j++) {
-      if (f->attributes[j].info) 
-        free(f->attributes[j].info); // free #7
-    }
-    free(f->attributes); // free #6
+    free_attributes(cf->fields[i].attributes,
+                    cf->fields[i].attributes_count);
   }
-  free(cf->fields); // free #5
+
+  free(cf->fields); // free #8
   return;
 }
 
@@ -252,7 +291,8 @@ void free_classfile(ClassFile* cf) {
   if (cf == NULL) return;
   if (cf->interfaces) free(cf->interfaces);      // free #4
   if (cf->constant_pool) free_constant_pool(cf); // ->free #3,2
-  if (cf->fields) free_fields(cf);               // ->free #5,6  
+  if (cf->fields) free_fields(cf);               // ->free #5,6,7
+  if (cf->methods) free_methods(cf);             // ->free #8,9,7
   free(cf); // free #1
 }
 
