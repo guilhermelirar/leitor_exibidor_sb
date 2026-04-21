@@ -3,6 +3,79 @@
 #include <stdio.h>
 #include <string.h>
 
+static const access_flag_desc class_flags[] = {
+  {ACC_PUBLIC, "ACC_PUBLIC"},
+  {ACC_FINAL, "ACC_FINAL"},
+  {ACC_SUPER, "ACC_SUPER"},
+  {ACC_INTERFACE, "ACC_INTERFACE"},
+  {ACC_ABSTRACT, "ACC_ABSTRACT"},
+  {ACC_SYNTHETIC, "ACC_SYNTHETIC"},
+  {ACC_ANNOTATION, "ACC_ANNOTATION"},
+  {ACC_ENUM, "ACC_ENUM"},
+};
+
+static const access_flag_desc method_flags[] = {
+  {ACC_PUBLIC, "ACC_PUBLIC"},
+  {ACC_PRIVATE, "ACC_PRIVATE"},
+  {ACC_PROTECTED, "ACC_PROTECTED"},
+  {ACC_STATIC, "ACC_STATIC"},
+  {ACC_FINAL, "ACC_FINAL"},
+  {ACC_SYNCHRONIZED, "ACC_SYNCHRONIZED"},
+  {ACC_ABSTRACT, "ACC_ABSTRACT"},
+  {ACC_SYNTHETIC, "ACC_SYNTHETIC"},
+};
+
+static const access_flag_desc field_flags[] = {
+  {ACC_PUBLIC, "ACC_PUBLIC"},
+  {ACC_PRIVATE, "ACC_PRIVATE"},
+  {ACC_PROTECTED, "ACC_PROTECTED"},
+  {ACC_STATIC, "ACC_STATIC"},
+  {ACC_FINAL, "ACC_FINAL"},
+  {ACC_VOLATILE, "ACC_VOLATILE"},
+  {ACC_TRANSIENT, "ACC_TRANSIENT"},
+  {ACC_SYNTHETIC, "ACC_SYNTHETIC"},
+  {ACC_ENUM, "ACC_ENUM"},
+};
+
+void print_access_flags(u2 bits,
+                        access_context_t ctx,
+                        FILE* file)
+{
+  const access_flag_desc* table = NULL;
+  size_t count = 0;
+
+  switch (ctx) {
+    case ACCESS_CLASS:
+      table = class_flags;
+      count = sizeof(class_flags) / sizeof(class_flags[0]);
+      break;
+    case ACCESS_METHOD:
+      table = method_flags;
+      count = sizeof(method_flags) / sizeof(method_flags[0]);
+      break;
+    case ACCESS_FIELD:
+      table = field_flags;
+      count = sizeof(field_flags) / sizeof(field_flags[0]);
+      break;
+    default:
+      return;
+  }
+
+  fprintf(file, "Access Flags: ");
+  int first = 1;
+
+  for (size_t i = 0; i < count; i++) {
+    if (bits & table[i].mask) {
+      if (!first) fprintf(file, ", ");
+      first = 0;
+      fprintf(file, "%s", table[i].name);
+    }
+  }
+
+  putc('\n', file);
+}
+
+
 void print_class_constant_pool(const ClassFile *cf, FILE *file) {
   // assume: cf não nulo, file não nulo
   u2 count = cf->constant_pool_count;
@@ -115,38 +188,6 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
   } 
 }
 
-void print_access_flags(u2 bits, FILE* file) {
-  struct {
-    u2 mask;
-    const char *name;
-  } table[] = {
-    {ACC_PUBLIC, "ACC_PUBLIC"},
-    {ACC_PRIVATE, "ACC_PRIVATE"},
-    {ACC_PROTECTED, "ACC_PROTECTED"},
-    {ACC_STATIC, "ACC_STATIC"},
-    {ACC_FINAL, "ACC_FINAL"},
-    {ACC_SUPER, "ACC_SUPER"},
-    {ACC_VOLATILE, "ACC_VOLATILE"},
-    {ACC_TRANSIENT, "ACC_TRANSIENT"},
-    {ACC_INTERFACE, "ACC_INTERFACE"},
-    {ACC_ABSTRACT, "ACC_ABSTRACT"},
-    {ACC_SYNTHETIC, "ACC_SYNTHETIC"},
-    {ACC_ANNOTATION, "ACC_ANNOTATION"},
-    {ACC_ENUM, "ACC_ENUM"},
-  };
-  
-  fprintf(file, "Access Flags: ");
-  int first = 1;
-  for (size_t i = 0; i < (sizeof(table) / sizeof(table[0])); i++) {
-    if (bits & table[i].mask) {
-      if (!first) fprintf(file, ", ");
-      if (first) first = 0;
-      fprintf(file, "%s", table[i].name);    
-    }
-  }
-  putc('\n', file);
-}
-
 void print_interfaces(const ClassFile* cf, FILE* file) {
   fprintf(file, "Interfaces: \n");
   for (int i = 0; i < cf->interfaces_count; i++) {
@@ -181,20 +222,20 @@ void print_attributes(const ClassFile *cf, u2 count,
 }
 
 void print_fields(const ClassFile *cf, FILE *file) {
-    fprintf(file, "Fields (%d):\n", cf->fields_count);
-    for (int i = 0; i < cf->fields_count; i++) {
-        field_info *f = &cf->fields[i];
-        fprintf(file, "  [%d] Name: %s\n", i, cp_get_utf8(cf, f->name_index));
-        fprintf(file, "      Descriptor: %s\n", cp_get_utf8(cf, f->descriptor_index));
+  fprintf(file, "Fields (%d):\n", cf->fields_count);
+  for (int i = 0; i < cf->fields_count; i++) {
+    field_info *f = &cf->fields[i];
+    fprintf(file, "  [%d] Name: %s\n", i, cp_get_utf8(cf, f->name_index));
+    fprintf(file, "      Descriptor: %s\n", cp_get_utf8(cf, f->descriptor_index));
         
-        // Reusa sua função de access flags (ajuste-a para não printar o prefixo se quiser)
-        fprintf(file, "      Flags: 0x%04X\n", f->access_flags); 
+    fprintf(file, "      "); 
+    print_access_flags(f->access_flags, ACCESS_FIELD, file); 
         
-        if (f->attributes_count > 0) {
-            fprintf(file, "      Attributes:\n");
-            print_attributes(cf, f->attributes_count, f->attributes, file, 8);
-        }
-        fprintf(file, "\n");
+    if (f->attributes_count > 0) {
+      fprintf(file, "      Attributes:\n");
+      print_attributes(cf, f->attributes_count, f->attributes, file, 8);
+    }
+      fprintf(file, "\n");
     }
 }
 
@@ -209,7 +250,7 @@ void printclass(const ClassFile *cf, FILE *file) {
   print_class_constant_pool(cf, file);
  
   putc('\n', file);
-  print_access_flags(cf->access_flags, file);
+  print_access_flags(cf->access_flags, ACCESS_CLASS, file);
 
   putc('\n', file);
   // this_class e super class

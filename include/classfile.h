@@ -28,6 +28,7 @@
 #define ACC_PROTECTED 0x0004
 #define ACC_STATIC 0x0008
 #define ACC_FINAL 0x0010
+#define ACC_SYNCHRONIZED 0x0020
 #define ACC_SUPER 0x0020
 #define ACC_VOLATILE 0x0040
 #define ACC_TRANSIENT 0x0080
@@ -41,6 +42,13 @@ typedef uint8_t  u1;
 typedef uint16_t u2;
 typedef uint32_t u4;
 typedef uint64_t u8;
+
+// Access_flags permitidas para cada contexto
+typedef enum {
+  ACCESS_CLASS,
+  ACCESS_FIELD,
+  ACCESS_METHOD
+} access_context_t;
 
 typedef struct {
   u2 name_index; 
