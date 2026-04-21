@@ -164,6 +164,7 @@ void read_methods(FILE *file, ClassFile *cf) {
   method_info* m = NULL;
   for (int i = 0; i < cf->methods_count; i++) {
     m = &cf->methods[i];
+    m->access_flags = read_u2(file);
     m->name_index = read_u2(file); // TODO tratar out of range ou nao
     m->descriptor_index = read_u2(file);
     m->attributes_count = read_u2(file);
