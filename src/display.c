@@ -1,3 +1,4 @@
+// TODO printar significado de identificadores de field
 #include "display.h"
 #include "classfile.h"
 #include <stdio.h>
@@ -81,7 +82,7 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
   u2 count = cf->constant_pool_count;
   cp_info* entry = NULL;
 
-  fprintf(file, "Constant Pool:\n");
+  fprintf(file, "Constant Pool (%d):\n", count);
   for (int i = 1; i < count; i++) {
     fprintf(file, " #%02d = ", i);
     entry = &cf->constant_pool[i];
@@ -221,32 +222,59 @@ void print_attributes(const ClassFile *cf, u2 count,
   }
 }
 
+void print_class_member(const ClassFile* cf,
+    u2 index, u2 name_index, 
+    u2 descriptor_index, u2 attributes_count,
+    attribute_info* attributes,
+    access_context_t access_ctx, u2 access_flags,
+    FILE* file) {
+  
+  fprintf(file, "  [%d] Name: %s\n", index, cp_get_utf8(cf, name_index));
+  fprintf(file, "      Descriptor: %s\n", cp_get_utf8(cf, descriptor_index));
+        
+  fprintf(file, "      "); 
+  print_access_flags(access_flags, access_ctx, file); 
+        
+  if (attributes_count > 0) {
+    fprintf(file, "      Attributes:\n");
+    print_attributes(cf, attributes_count, attributes, file, 8);
+  }
+  
+  fprintf(file, "\n");
+}
+
 void print_fields(const ClassFile *cf, FILE *file) {
   fprintf(file, "Fields (%d):\n", cf->fields_count);
   for (int i = 0; i < cf->fields_count; i++) {
     field_info *f = &cf->fields[i];
-    fprintf(file, "  [%d] Name: %s\n", i, cp_get_utf8(cf, f->name_index));
-    fprintf(file, "      Descriptor: %s\n", cp_get_utf8(cf, f->descriptor_index));
-        
-    fprintf(file, "      "); 
-    print_access_flags(f->access_flags, ACCESS_FIELD, file); 
-        
-    if (f->attributes_count > 0) {
-      fprintf(file, "      Attributes:\n");
-      print_attributes(cf, f->attributes_count, f->attributes, file, 8);
-    }
-      fprintf(file, "\n");
-    }
+    print_class_member(cf, i, f->name_index, 
+        f->descriptor_index, 
+        f->attributes_count, 
+        f->attributes, 
+        ACCESS_FIELD, 
+        f->access_flags, file);  
+  }
 }
+
+void print_methods(const ClassFile *cf, FILE *file) {
+  fprintf(file, "Methods (%d):\n", cf->methods_count);
+  for (int i = 0; i < cf->methods_count; i++) {
+    method_info *m = &cf->methods[i];
+    print_class_member(cf, i, m->name_index, 
+        m->descriptor_index, 
+        m->attributes_count, 
+        m->attributes, 
+        ACCESS_METHOD, 
+        m->access_flags, file);  
+  }
+} 
 
 void printclass(const ClassFile *cf, FILE *file) {
   fprintf(file, "Magic: 0x%X\n", cf->magic);
   fprintf(file, "Version: %d.%d\n", 
       cf->major_version, cf->minor_version);
-  fprintf(file, "Constant Pool Count: %d\n",
-      cf->constant_pool_count);
   
-    putc('\n', file);
+  putc('\n', file);
   print_class_constant_pool(cf, file);
  
   putc('\n', file);
@@ -263,6 +291,9 @@ void printclass(const ClassFile *cf, FILE *file) {
 
   putc('\n', file);
   print_fields(cf, file);
+
+  putc('\n', file);
+  print_methods(cf, file);
 }
 
 
