@@ -168,7 +168,8 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
         u8 long_hl = ((u8)entry->info.long_info.h_bytes << 32) | 
           (u8)entry->info.long_info.l_bytes; 
 
-        fprintf(file, "Long              %" PRId64, long_hl);
+        fprintf(file, "Long               %" PRId64, long_hl);
+        i++;
         break;
       }
 
@@ -178,6 +179,7 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
           ((u8) entry->info.double_info.l_bytes);
         memcpy(&d, &bits, sizeof(double));
         fprintf(file, "Double            %f", d);
+        i++;
         break;
       }
 
