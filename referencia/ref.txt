@@ -1,54 +1,62 @@
 Classfile /home/guilherme/Documentos/leitor_exibidor/referencia/Teste.class
-  Last modified 15/04/2026; size 601 bytes
-  MD5 checksum 8b7ac82c7e2a8eccf2309891c825d97b
+  Last modified 22/04/2026; size 684 bytes
+  MD5 checksum af973fc8227afc0f80aec0f01d954a25
   Compiled from "Teste.java"
 public class Teste
   minor version: 0
   major version: 52
   flags: ACC_PUBLIC, ACC_SUPER
 Constant pool:
-   #1 = Methodref          #9.#25         // java/lang/Object."<init>":()V
-   #2 = Fieldref           #26.#27        // java/lang/System.out:Ljava/io/PrintStream;
-   #3 = String             #28            // Hello world!
-   #4 = Methodref          #29.#30        // java/io/PrintStream.println:(Ljava/lang/String;)V
-   #5 = Class              #31            // Teste
-   #6 = Methodref          #29.#32        // java/io/PrintStream.println:(I)V
-   #7 = Float              3.14f
-   #8 = Methodref          #29.#33        // java/io/PrintStream.println:(F)V
-   #9 = Class              #34            // java/lang/Object
-  #10 = Utf8               ANSWER
-  #11 = Utf8               I
-  #12 = Utf8               ConstantValue
-  #13 = Integer            42
-  #14 = Utf8               PI
-  #15 = Utf8               F
-  #16 = Utf8               <init>
-  #17 = Utf8               ()V
-  #18 = Utf8               Code
-  #19 = Utf8               LineNumberTable
-  #20 = Utf8               hello
-  #21 = Utf8               main
-  #22 = Utf8               ([Ljava/lang/String;)V
-  #23 = Utf8               SourceFile
-  #24 = Utf8               Teste.java
-  #25 = NameAndType        #16:#17        // "<init>":()V
-  #26 = Class              #35            // java/lang/System
-  #27 = NameAndType        #36:#37        // out:Ljava/io/PrintStream;
-  #28 = Utf8               Hello world!
-  #29 = Class              #38            // java/io/PrintStream
-  #30 = NameAndType        #39:#40        // println:(Ljava/lang/String;)V
-  #31 = Utf8               Teste
-  #32 = NameAndType        #39:#41        // println:(I)V
-  #33 = NameAndType        #39:#42        // println:(F)V
-  #34 = Utf8               java/lang/Object
-  #35 = Utf8               java/lang/System
-  #36 = Utf8               out
-  #37 = Utf8               Ljava/io/PrintStream;
-  #38 = Utf8               java/io/PrintStream
-  #39 = Utf8               println
-  #40 = Utf8               (Ljava/lang/String;)V
-  #41 = Utf8               (I)V
-  #42 = Utf8               (F)V
+   #1 = Methodref          #13.#31        // java/lang/Object."<init>":()V
+   #2 = Fieldref           #32.#33        // java/lang/System.out:Ljava/io/PrintStream;
+   #3 = String             #34            // Hello world!
+   #4 = Methodref          #35.#36        // java/io/PrintStream.println:(Ljava/lang/String;)V
+   #5 = Methodref          #6.#37         // Teste.hello:()V
+   #6 = Class              #38            // Teste
+   #7 = Methodref          #35.#39        // java/io/PrintStream.println:(I)V
+   #8 = Float              3.14f
+   #9 = Methodref          #35.#40        // java/io/PrintStream.println:(F)V
+  #10 = Long               -42l
+  #12 = Methodref          #35.#41        // java/io/PrintStream.println:(J)V
+  #13 = Class              #42            // java/lang/Object
+  #14 = Utf8               ANSWER
+  #15 = Utf8               I
+  #16 = Utf8               ConstantValue
+  #17 = Integer            42
+  #18 = Utf8               PI
+  #19 = Utf8               F
+  #20 = Utf8               LONG
+  #21 = Utf8               J
+  #22 = Utf8               <init>
+  #23 = Utf8               ()V
+  #24 = Utf8               Code
+  #25 = Utf8               LineNumberTable
+  #26 = Utf8               hello
+  #27 = Utf8               main
+  #28 = Utf8               ([Ljava/lang/String;)V
+  #29 = Utf8               SourceFile
+  #30 = Utf8               Teste.java
+  #31 = NameAndType        #22:#23        // "<init>":()V
+  #32 = Class              #43            // java/lang/System
+  #33 = NameAndType        #44:#45        // out:Ljava/io/PrintStream;
+  #34 = Utf8               Hello world!
+  #35 = Class              #46            // java/io/PrintStream
+  #36 = NameAndType        #47:#48        // println:(Ljava/lang/String;)V
+  #37 = NameAndType        #26:#23        // hello:()V
+  #38 = Utf8               Teste
+  #39 = NameAndType        #47:#49        // println:(I)V
+  #40 = NameAndType        #47:#50        // println:(F)V
+  #41 = NameAndType        #47:#51        // println:(J)V
+  #42 = Utf8               java/lang/Object
+  #43 = Utf8               java/lang/System
+  #44 = Utf8               out
+  #45 = Utf8               Ljava/io/PrintStream;
+  #46 = Utf8               java/io/PrintStream
+  #47 = Utf8               println
+  #48 = Utf8               (Ljava/lang/String;)V
+  #49 = Utf8               (I)V
+  #50 = Utf8               (F)V
+  #51 = Utf8               (J)V
 {
   public Teste();
     descriptor: ()V
@@ -65,17 +73,23 @@ Constant pool:
     descriptor: ([Ljava/lang/String;)V
     flags: ACC_PUBLIC, ACC_STATIC
     Code:
-      stack=2, locals=1, args_size=1
-         0: getstatic     #2                  // Field java/lang/System.out:Ljava/io/PrintStream;
-         3: bipush        42
-         5: invokevirtual #6                  // Method java/io/PrintStream.println:(I)V
-         8: getstatic     #2                  // Field java/lang/System.out:Ljava/io/PrintStream;
-        11: ldc           #7                  // float 3.14f
-        13: invokevirtual #8                  // Method java/io/PrintStream.println:(F)V
-        16: return
+      stack=3, locals=1, args_size=1
+         0: invokestatic  #5                  // Method hello:()V
+         3: getstatic     #2                  // Field java/lang/System.out:Ljava/io/PrintStream;
+         6: bipush        42
+         8: invokevirtual #7                  // Method java/io/PrintStream.println:(I)V
+        11: getstatic     #2                  // Field java/lang/System.out:Ljava/io/PrintStream;
+        14: ldc           #8                  // float 3.14f
+        16: invokevirtual #9                  // Method java/io/PrintStream.println:(F)V
+        19: getstatic     #2                  // Field java/lang/System.out:Ljava/io/PrintStream;
+        22: ldc2_w        #10                 // long -42l
+        25: invokevirtual #12                 // Method java/io/PrintStream.println:(J)V
+        28: return
       LineNumberTable:
-        line 10: 0
-        line 11: 8
-        line 12: 16
+        line 11: 0
+        line 12: 3
+        line 13: 11
+        line 14: 19
+        line 15: 28
 }
 SourceFile: "Teste.java"
