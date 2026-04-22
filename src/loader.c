@@ -76,11 +76,13 @@ int read_constant_pool(FILE *file, ClassFile *cf) {
       case CONSTANT_Long:
         entry->info.long_info.h_bytes = read_u4(file);
         entry->info.long_info.l_bytes = read_u4(file);
+        i++;
         break;
 
       case CONSTANT_Double: 
         entry->info.double_info.h_bytes = read_u4(file);
         entry->info.double_info.l_bytes = read_u4(file);
+        i++;
         break;
 
       default:
