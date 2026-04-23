@@ -18,6 +18,10 @@ int main(int argc, const char **argv) {
   if (!class) return 1;
 
   printclass(class, stdout);
+  for (int i = 0; i < class->methods_count; i++) {
+    disasasm_method(class, i, stdout);
+  }
+
   free_classfile(class);
 
   return 0;

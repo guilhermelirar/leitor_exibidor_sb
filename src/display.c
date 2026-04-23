@@ -1,45 +1,47 @@
 // TODO printar significado de identificadores de field
 #include "display.h"
 #include "classfile.h"
+#include "bytecode.h"
 #include <stdio.h>
 #include <string.h>
 
 static const access_flag_desc class_flags[] = {
-  {ACC_PUBLIC, "ACC_PUBLIC"},
-  {ACC_FINAL, "ACC_FINAL"},
-  {ACC_SUPER, "ACC_SUPER"},
-  {ACC_INTERFACE, "ACC_INTERFACE"},
-  {ACC_ABSTRACT, "ACC_ABSTRACT"},
-  {ACC_SYNTHETIC, "ACC_SYNTHETIC"},
-  {ACC_ANNOTATION, "ACC_ANNOTATION"},
-  {ACC_ENUM, "ACC_ENUM"},
+  {ACC_PUBLIC,       "public",       "ACC_PUBLIC"},
+  {ACC_FINAL,        "final",        "ACC_FINAL"},
+  {ACC_SUPER,        "super",        "ACC_SUPER"},
+  {ACC_INTERFACE,    "interface",    "ACC_INTERFACE"},
+  {ACC_ABSTRACT,     "abstract",     "ACC_ABSTRACT"},
+  {ACC_SYNTHETIC,    "synthetic",    "ACC_SYNTHETIC"},
+  {ACC_ANNOTATION,   "annotation",   "ACC_ANNOTATION"},
+  {ACC_ENUM,         "enum",         "ACC_ENUM"},
 };
 
 static const access_flag_desc method_flags[] = {
-  {ACC_PUBLIC, "ACC_PUBLIC"},
-  {ACC_PRIVATE, "ACC_PRIVATE"},
-  {ACC_PROTECTED, "ACC_PROTECTED"},
-  {ACC_STATIC, "ACC_STATIC"},
-  {ACC_FINAL, "ACC_FINAL"},
-  {ACC_SYNCHRONIZED, "ACC_SYNCHRONIZED"},
-  {ACC_ABSTRACT, "ACC_ABSTRACT"},
-  {ACC_SYNTHETIC, "ACC_SYNTHETIC"},
+  {ACC_PUBLIC,        "public",        "ACC_PUBLIC"},
+  {ACC_PRIVATE,       "private",       "ACC_PRIVATE"},
+  {ACC_PROTECTED,     "protected",     "ACC_PROTECTED"},
+  {ACC_STATIC,        "static",        "ACC_STATIC"},
+  {ACC_FINAL,         "final",         "ACC_FINAL"},
+  {ACC_SYNCHRONIZED,  "synchronized",  "ACC_SYNCHRONIZED"},
+  {ACC_ABSTRACT,      "abstract",      "ACC_ABSTRACT"},
+  {ACC_SYNTHETIC,     "synthetic",     "ACC_SYNTHETIC"},
 };
 
 static const access_flag_desc field_flags[] = {
-  {ACC_PUBLIC, "ACC_PUBLIC"},
-  {ACC_PRIVATE, "ACC_PRIVATE"},
-  {ACC_PROTECTED, "ACC_PROTECTED"},
-  {ACC_STATIC, "ACC_STATIC"},
-  {ACC_FINAL, "ACC_FINAL"},
-  {ACC_VOLATILE, "ACC_VOLATILE"},
-  {ACC_TRANSIENT, "ACC_TRANSIENT"},
-  {ACC_SYNTHETIC, "ACC_SYNTHETIC"},
-  {ACC_ENUM, "ACC_ENUM"},
+  {ACC_PUBLIC,      "public",      "ACC_PUBLIC"},
+  {ACC_PRIVATE,     "private",     "ACC_PRIVATE"},
+  {ACC_PROTECTED,   "protected",   "ACC_PROTECTED"},
+  {ACC_STATIC,      "static",      "ACC_STATIC"},
+  {ACC_FINAL,       "final",       "ACC_FINAL"},
+  {ACC_VOLATILE,    "volatile",    "ACC_VOLATILE"},
+  {ACC_TRANSIENT,   "transient",   "ACC_TRANSIENT"},
+  {ACC_SYNTHETIC,   "synthetic",   "ACC_SYNTHETIC"},
+  {ACC_ENUM,        "enum",        "ACC_ENUM"},
 };
 
 void print_access_flags(u2 bits,
                         access_context_t ctx,
+                        access_format_t fmt,
                         FILE* file)
 {
   const access_flag_desc* table = NULL;
@@ -62,18 +64,20 @@ void print_access_flags(u2 bits,
       return;
   }
 
-  fprintf(file, "Access Flags: ");
   int first = 1;
+
+  const char* sep = (fmt == ACCESS_FMT_JAVA) ? " " : ", ";
 
   for (size_t i = 0; i < count; i++) {
     if (bits & table[i].mask) {
-      if (!first) fprintf(file, ", ");
+      if (!first) fputs(sep, file);
       first = 0;
-      fprintf(file, "%s", table[i].name);
+      fputs(
+          fmt == ACCESS_FMT_DEBUG ? 
+          table[i].debug_kw : table[i].java_kw, 
+          file);
     }
   }
-
-  putc('\n', file);
 }
 
 
@@ -234,8 +238,9 @@ void print_class_member(const ClassFile* cf,
   fprintf(file, "  [%d] Name: %s\n", index, cp_get_utf8(cf, name_index));
   fprintf(file, "      Descriptor: %s\n", cp_get_utf8(cf, descriptor_index));
         
-  fprintf(file, "      "); 
-  print_access_flags(access_flags, access_ctx, file); 
+  fputs("      Access Flags: ", file); 
+  print_access_flags(access_flags, access_ctx, ACCESS_FMT_DEBUG, file);
+  putc('\n', file);
         
   if (attributes_count > 0) {
     fprintf(file, "      Attributes:\n");
@@ -271,6 +276,7 @@ void print_methods(const ClassFile *cf, FILE *file) {
   }
 } 
 
+
 void printclass(const ClassFile *cf, FILE *file) {
   fprintf(file, "Magic: 0x%X\n", cf->magic);
   fprintf(file, "Version: %d.%d\n", 
@@ -280,7 +286,9 @@ void printclass(const ClassFile *cf, FILE *file) {
   print_class_constant_pool(cf, file);
  
   putc('\n', file);
-  print_access_flags(cf->access_flags, ACCESS_CLASS, file);
+  fputs("Access Flags: ", file); 
+  print_access_flags(cf->access_flags, ACCESS_CLASS, 
+      ACCESS_FMT_DEBUG, file);
 
   putc('\n', file);
   // this_class e super class
@@ -299,5 +307,17 @@ void printclass(const ClassFile *cf, FILE *file) {
 }
 
 
+void print_method_signature(const ClassFile* cf, method_info* m, FILE* out) {
+  print_access_flags(m->access_flags, 
+        ACCESS_METHOD, ACCESS_FMT_JAVA, out);
+  // TODO implementar
+  fprintf(out, 
+      " <not_implemented>%s(<not implemented>)", 
+      cp_get_utf8(cf, m->name_index));
+}
 
-
+void disasasm_method(const ClassFile *cf, int method_index, FILE* out) {
+  method_info* m = &cf->methods[method_index];
+  fprintf(out, "[%d] ", method_index); print_method_signature(cf, m, out);
+  putc('\n', out);
+} 

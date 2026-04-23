@@ -6,12 +6,25 @@
 
 typedef struct {
   u2 mask;
-  const char* name;
+  const char* java_kw;
+  const char* debug_kw;
 } access_flag_desc;
+
+typedef enum {
+    ACCESS_FMT_DEBUG, 
+    ACCESS_FMT_JAVA 
+} access_format_t;
+
+void print_method_signature(const ClassFile* cf, method_info* m, FILE* out);
+
+void disasasm_method(const ClassFile *cf, 
+    int method_index, 
+    FILE* out);
 
 void print_class_constant_pool(const ClassFile *cf, FILE *file);
 
-void print_access_flags(u2 bits, access_context_t ctx, FILE* file);
+void print_access_flags(u2 bits, access_context_t ctx, 
+    access_format_t fmt, FILE* file);
 
 void print_interfaces(const ClassFile* cf, FILE* file);
 
