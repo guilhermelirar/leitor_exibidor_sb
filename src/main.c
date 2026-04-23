@@ -1,7 +1,7 @@
 #include "stdio.h"
 #include "classfile.h"
 #include "display.h"
-#include "loader.h"
+#include "classfile_reader.h"
 
 
 int main(int argc, const char **argv) {
