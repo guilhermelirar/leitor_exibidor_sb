@@ -1,9 +1,9 @@
 // TODO printar significado de identificadores de field
 #include "display.h"
 #include "classfile.h"
-#include "bytecode.h"
 #include <stdio.h>
 #include <string.h>
+#include <strings.h>
 
 static const access_flag_desc class_flags[] = {
   {ACC_PUBLIC,       "public",       "ACC_PUBLIC"},
@@ -229,19 +229,27 @@ void print_attributes(const ClassFile *cf, u2 count,
 }
 
 void print_class_member(const ClassFile* cf,
-    u2 index, u2 name_index, 
-    u2 descriptor_index, u2 attributes_count,
-    attribute_info* attributes,
-    access_context_t access_ctx, u2 access_flags,
-    FILE* file) {
+  u2 index, u2 name_index, 
+  u2 descriptor_index, u2 attributes_count,
+  attribute_info* attributes,
+  access_context_t access_ctx, u2 access_flags,
+  FILE* file) {
   
   fprintf(file, "  [%d] Name: %s\n", index, cp_get_utf8(cf, name_index));
   fprintf(file, "      Descriptor: %s\n", cp_get_utf8(cf, descriptor_index));
-        
+  
+
   fputs("      Access Flags: ", file); 
   print_access_flags(access_flags, access_ctx, ACCESS_FMT_DEBUG, file);
   putc('\n', file);
-        
+  
+  // Exibe a assinatura em caso de ser método
+  if (access_ctx == ACCESS_METHOD) {
+    printf("      Definition: ");
+    print_method_definition(cf, &cf->methods[index], file);
+    putc('\n', file);
+  }
+
   if (attributes_count > 0) {
     fprintf(file, "      Attributes:\n");
     print_attributes(cf, attributes_count, attributes, file, 8);
@@ -307,7 +315,7 @@ void printclass(const ClassFile *cf, FILE *file) {
 }
 
 
-void print_method_signature(const ClassFile* cf, method_info* m, FILE* out) {
+void print_method_definition(const ClassFile* cf, method_info* m, FILE* out) {
   print_access_flags(m->access_flags, 
         ACCESS_METHOD, ACCESS_FMT_JAVA, out);
   // TODO implementar
@@ -315,9 +323,3 @@ void print_method_signature(const ClassFile* cf, method_info* m, FILE* out) {
       " <not_implemented>%s(<not implemented>)", 
       cp_get_utf8(cf, m->name_index));
 }
-
-void disasasm_method(const ClassFile *cf, int method_index, FILE* out) {
-  method_info* m = &cf->methods[method_index];
-  fprintf(out, "[%d] ", method_index); print_method_signature(cf, m, out);
-  putc('\n', out);
-} 

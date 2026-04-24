@@ -1,11 +1,10 @@
 #include "bytecode.h"
 #include "classfile.h"
 #include "reader.h"
-#include <string.h>
+#include "classfile_reader.h"
 #include <stdlib.h>
 
 void parse_code_attribute(
-  const ClassFile *cf,
   const attribute_info *attr,
   Code_attribute *code_attr
 ) {
@@ -43,7 +42,11 @@ void parse_code_attribute(
 
   code_attr->attributes_count = read_u2(&reader);
 
-  // TODO parse code attributes
+  code_attr->attributes = malloc(sizeof(attribute_info) * code_attr->attributes_count);
+
+  read_attributes(&reader,
+                code_attr->attributes_count,
+                code_attr->attributes);
 }
 
 void free_code_attribute(Code_attribute *code);

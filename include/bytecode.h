@@ -17,7 +17,6 @@ typedef struct {
 } Code_attribute;
 
 void parse_code_attribute(
-  const ClassFile *cf,
   const attribute_info *attr,
   Code_attribute* code_attr
 );

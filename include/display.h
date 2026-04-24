@@ -15,11 +15,7 @@ typedef enum {
     ACCESS_FMT_JAVA 
 } access_format_t;
 
-void print_method_signature(const ClassFile* cf, method_info* m, FILE* out);
-
-void disasasm_method(const ClassFile *cf, 
-    int method_index, 
-    FILE* out);
+void print_method_definition(const ClassFile* cf, method_info* m, FILE* out);
 
 void print_class_constant_pool(const ClassFile *cf, FILE *file);
 
