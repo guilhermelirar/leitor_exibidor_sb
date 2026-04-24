@@ -1,33 +1,15 @@
 #include "classfile_reader.h"
+#include "reader.h"
 #include "classfile.h"
 #include <stdio.h>
 #include <stdlib.h>
-  
-u2 read_u2(FILE *file) {
-    int high = fgetc(file);
-    int low = fgetc(file);
 
-    if (high == EOF || low == EOF) {
-        fprintf(stderr, "EOF reached\n");
-        return 0;
-    }
-
-    return ((u2)high << 8) | (u2)low;
-}
-
-u4 read_u4(FILE* file) {
-  u2 high = read_u2(file);
-  u2 low = read_u2(file);
-
-  return ((u4)high << 16) | (u4)low;
-}
-
-int read_constant_pool(FILE *file, ClassFile *cf) {
+int read_constant_pool(Reader *file, ClassFile *cf) {
   // assume: cursor logo após constant_pool_count
   cp_info* entry;
   for (int i = 1; i < cf->constant_pool_count; i++) {
     entry = &cf->constant_pool[i];
-    entry->tag = (u1)fgetc(file);
+    entry->tag = read_u1(file);
     
     switch (entry->tag) {
       case CONSTANT_Class:
@@ -95,26 +77,24 @@ int read_constant_pool(FILE *file, ClassFile *cf) {
   return SUCCESS;
 }
 
-u1* read_utf8(FILE *file, u2 length) {
+u1* read_utf8(Reader *r, u2 length) {
   u1 *bytes = (u1*) malloc(length + 1); // malloc #3
     
   if (bytes == NULL) {
     return NULL;
   }
 
-  size_t read_count = fread(bytes, 1, length, file);
-
-  if (read_count != length) {
-      free(bytes);
-      return NULL;
+  for (u2 i = 0; i < length; i++) {
+    bytes[i] = read_u1(r);
   }
+
 
   bytes[length] = '\0';
 
   return bytes;
 }
 
-int read_interfaces(FILE* file, ClassFile* cf) {
+int read_interfaces(Reader* file, ClassFile* cf) {
   for (int i = 0; i < cf->interfaces_count; i++) {
     u2 idx = read_u2(file);
 
@@ -128,26 +108,23 @@ int read_interfaces(FILE* file, ClassFile* cf) {
 }
 
 
-void read_attributes(FILE* file, 
-    u2 attributes_count, attribute_info* attributes) 
+void read_attributes(Reader* r,
+    u2 attributes_count, attribute_info* attributes)
 {
-  for (int i = 0; i < attributes_count; i++) {
-    attributes[i].attribute_name_index = read_u2(file);
-    attributes[i].attribute_length = read_u4(file);
-    
-    // malloc #7
-    attributes[i].info = (u1*)
-      malloc(sizeof(u1) * attributes[i].attribute_length);
+  for (u2 i = 0; i < attributes_count; i++) {
+    attributes[i].attribute_name_index = read_u2(r);
+    attributes[i].attribute_length = read_u4(r);
 
-    if (!attributes[i].info) return; // TODO tratamento melhor
+    attributes[i].info = malloc(attributes[i].attribute_length);
+    if (!attributes[i].info) return;
 
-    fread(attributes[i].info, 
-        sizeof(u1), (size_t)attributes[i].attribute_length, 
-        file);
+    for (u4 j = 0; j < attributes[i].attribute_length; j++) {
+      attributes[i].info[j] = read_u1(r);
+    }
   }
 }
 
-void read_fields(FILE *file, ClassFile *cf) {
+void read_fields(Reader *file, ClassFile *cf) {
   field_info* field;
   for (int i = 0; i < cf->fields_count; i++) {
     field = &cf->fields[i];
@@ -162,7 +139,7 @@ void read_fields(FILE *file, ClassFile *cf) {
   }
 }
 
-void read_methods(FILE *file, ClassFile *cf) {
+void read_methods(Reader *file, ClassFile *cf) {
   method_info* m = NULL;
   for (int i = 0; i < cf->methods_count; i++) {
     m = &cf->methods[i];
@@ -176,66 +153,62 @@ void read_methods(FILE *file, ClassFile *cf) {
   }
 }
 
-ClassFile *load_class(const char *filepath) {
-  FILE *file =  fopen(filepath, "rb");
+ClassFile *read_class(Reader *reader) {
   ClassFile* cf = NULL;
 
-  if (file == NULL) {
-    perror("fopen");
+  if (reader == NULL) {
     goto cleanup;
   }
   
   cf = (ClassFile*)malloc(sizeof(ClassFile)); // malloc #1
   cf->constant_pool = NULL;
-  cf->magic = read_u4(file);
+  cf->magic = read_u4(reader);
   
   if (cf->magic != (u4)MAGIC) {
-    printf("File \"%s\" doesn't contain magic.\n"
-        "  Expected: %X\n  Got: %X\n", filepath, MAGIC, cf->magic);
+    printf("File doesn't contain magic.\n"
+        "  Expected: %X\n  Got: %X\n", MAGIC, cf->magic);
     goto cleanup;
   } 
 
-  cf->minor_version = read_u2(file);
-  cf->major_version = read_u2(file);
-  cf->constant_pool_count = read_u2(file);
+  cf->minor_version = read_u2(reader);
+  cf->major_version = read_u2(reader);
+  cf->constant_pool_count = read_u2(reader);
  
   cf->constant_pool = (cp_info*)malloc(sizeof(cp_info) * 
       (cf->constant_pool_count)); // malloc #2
   if (!cf->constant_pool) goto cleanup;
 
-  if (read_constant_pool(file, cf) != SUCCESS) goto cleanup; // malloc #3
+  if (read_constant_pool(reader, cf) != SUCCESS) goto cleanup; // malloc #3
 
-  cf->access_flags = read_u2(file);
+  cf->access_flags = read_u2(reader);
 
-  cf->this_class = read_u2(file); // Idx para CONSTANT_Class em constant_pool
-  cf->super_class = read_u2(file); // ''
+  cf->this_class = read_u2(reader); // Idx para CONSTANT_Class em constant_pool
+  cf->super_class = read_u2(reader); // ''
 
   // Interfaces
-  cf->interfaces_count = read_u2(file);
+  cf->interfaces_count = read_u2(reader);
   cf->interfaces = (u2*)malloc(sizeof(u2) * cf->interfaces_count); // malloc #4
   if (!cf->interfaces) goto cleanup;
-  read_interfaces(file, cf);
+  read_interfaces(reader, cf);
 
   // Fields
-  cf->fields_count = read_u2(file);
+  cf->fields_count = read_u2(reader);
   cf->fields = (field_info*)malloc(
       sizeof(field_info) *  cf->fields_count
       ); // malloc #5
   if (!cf->interfaces) goto cleanup;
-  read_fields(file, cf);
+  read_fields(reader, cf);
 
   // Methods
-  cf->methods_count = read_u2(file);
+  cf->methods_count = read_u2(reader);
   cf->methods = (method_info*)malloc(
       sizeof(method_info) * cf->methods_count
       ); // malloc #8
-  read_methods(file, cf);
+  read_methods(reader, cf);
 
-  fclose(file);
   return cf;
 
 cleanup:
-  if (file) fclose(file);
   if (cf) free_classfile(cf);
   return NULL;
 }

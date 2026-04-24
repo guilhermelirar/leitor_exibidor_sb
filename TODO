@@ -1,2 +1,4 @@
-1. Reader {FILE* file, int status} para tratar erros ao final de sequencias de leitura
-2. printar os fields e atributos
+MUDAR TODO O PROGRAMA 
+PARA LER O BUFFER DE U1 CARREGADO
+A PARTIR DE LOADFILE.
+PARSEAR ATRIBUTOS DE FORMA MAIS FACIL

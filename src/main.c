@@ -1,7 +1,9 @@
+#include "reader.h"
 #include "stdio.h"
 #include "classfile.h"
 #include "display.h"
 #include "classfile_reader.h"
+#include <stdlib.h>
 
 
 int main(int argc, const char **argv) {
@@ -14,7 +16,12 @@ int main(int argc, const char **argv) {
 
   const char* filepath = argv[1];
   
-  class = load_class(filepath);
+  FILE* file = fopen(filepath, "rb");
+  Reader reader = { NULL, 0 , 0};
+  reader.buf = load_file(file, &reader.size);
+
+  class = read_class(&reader);
+  free(reader.buf);
   if (!class) return 1;
 
   printclass(class, stdout);
@@ -23,6 +30,7 @@ int main(int argc, const char **argv) {
   }
 
   free_classfile(class);
+
 
   return 0;
 }
