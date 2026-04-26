@@ -216,9 +216,8 @@ void print_attributes(const ClassFile *cf, u2 count,
    
     // identificando atributo
     if (strcmp(name, "ConstantValue") == 0) {
-      u2 cv_index = (attributes[i].info[0] << 8) | attributes[i].info[1];
       for(int s=0; s<indent+4; s++) fprintf(file, " ");
-      fprintf(file, "Constant Value index: #%d\n", cv_index);
+      fprintf(file, "Constant Value index: #%d\n", attributes[i].info.constantvalue_index);
     } 
     else if (strcmp(name, "Code") == 0) {
       for(int s=0; s<indent+4; s++) fprintf(file, " ");

@@ -27,5 +27,6 @@ int main(int argc, const char **argv) {
   printclass(class, stdout);
   free_classfile(class);
 
+  fclose(file);
   return 0;
 }
