@@ -43,6 +43,10 @@ typedef uint16_t u2;
 typedef uint32_t u4;
 typedef uint64_t u8;
 
+// Forward declarations necessárias
+typedef struct attribute_info attribute_info;
+typedef struct Code_attribute Code_attribute;
+
 // Access_flags permitidas para cada contexto
 typedef enum {
   ACCESS_CLASS,
@@ -106,11 +110,35 @@ typedef struct {
   } info;
 } cp_info;
 
-typedef struct {
+struct attribute_info {
   u2 attribute_name_index;
   u4 attribute_length;
-  u1 *info;
-} attribute_info;
+  union {
+    u2 constantvalue_index;
+    Code_attribute* code_attribute;
+    u1 *raw;
+  } info;
+};
+
+// CODE attribute
+typedef struct {
+  u2 start_pc;
+  u2 end_pc;
+  u2 handler_pc;
+  u2 catch_type; 
+} exception_info;
+
+
+struct Code_attribute {
+  u2 max_stack;
+  u2 max_locals;
+  u4 code_length;
+  u1* code;
+  u2 exception_table_length;
+  exception_info* exception_table;
+  u2 attributes_count;
+  attribute_info* attributes;
+};
 
 typedef struct {
   u2 access_flags;
@@ -148,13 +176,8 @@ typedef struct {
 } ClassFile;
 
 
-// CODE attribute
-typedef struct {
-  u2 start_pc;
-  u2 end_pc;
-  u2 handler_pc;
-  u2 catch_type; 
-} exception_info;
+
+
 
 // Obter strings
 const char* cp_class_name(const ClassFile *cf, u2 class_index);
