@@ -23,4 +23,10 @@ clean:
 run: $(BIN)
 	./$(BIN)
 
-.PHONY: all clean run
+debug: $(BIN)
+	gdb --args ./$(BIN) referencia/Teste.class
+
+valgrind: $(BIN)
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./$(BIN) referencia/Teste.class
+
+.PHONY: all clean run debug valgrind
