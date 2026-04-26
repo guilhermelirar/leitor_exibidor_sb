@@ -3,6 +3,7 @@
 #include "classfile.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 int read_constant_pool(Reader *file, ClassFile *cf) {
   // assume: cursor logo após constant_pool_count
@@ -107,20 +108,80 @@ int read_interfaces(Reader* file, ClassFile* cf) {
   return SUCCESS;
 }
 
+void read_code_attribute(
+  Reader *r,
+  ClassFile *cf,
+  Code_attribute* code_attr
+) {
+  // malloc #10, 11, 12
+  code_attr->max_stack = read_u2(r);
+  code_attr->max_locals = read_u2(r);
+  code_attr->code_length = read_u4(r);
+  code_attr->code = (u1*)calloc(code_attr->code_length, sizeof(u1));
+  if (!code_attr) return; // TODO melhorar
+  
+  for (u4 i = 0; i < code_attr->code_length; i++) 
+    code_attr->code[i] = read_u1(r);
+  
+  code_attr->exception_table_length = read_u2(r);
+  if (code_attr->exception_table_length) {
+    code_attr->exception_table = (exception_info*)calloc(
+      code_attr->exception_table_length, sizeof(exception_info)
+    );
+    if (!code_attr->exception_table) return;
+  } else code_attr->exception_table = NULL;
 
-void read_attributes(Reader* r,
+  // Leitura de tabela de exceções
+  exception_info* ei = NULL;
+  for (u2 i = 0; i < code_attr->exception_table_length; i++) {
+    ei = &code_attr->exception_table[i];
+    ei->start_pc = read_u2(r);
+    ei->end_pc = read_u2(r);
+    ei->handler_pc = read_u2(r);
+    ei->catch_type = read_u2(r);
+  }
+  
+  code_attr->attributes_count = read_u2(r);
+  code_attr->attributes = (attribute_info*)calloc(
+      code_attr->attributes_count, 
+      sizeof(attribute_info)
+      );
+  if (!code_attr->attributes) return;
+
+  read_attributes(r, cf, 
+      code_attr->attributes_count, code_attr->attributes);
+}
+
+void read_attribute_info(Reader* r, ClassFile* cf, 
+    attribute_info* attr) {
+  const char* attr_name = cp_get_utf8(cf, attr->attribute_name_index);
+  
+  // Caso constan value, indice para constant_pool
+  if (strcmp(attr_name, "ConstantValue") == 0) {
+    attr->info.constantvalue_index = read_u2(r); 
+    return;
+  }
+
+  if (strcmp(attr_name, "Code") == 0) {
+    attr->info.code_attribute = malloc(sizeof(Code_attribute)); // malloc #9
+    read_code_attribute(r, cf, attr->info.code_attribute);
+    return;
+  } 
+
+  for (u4 i = 0; i < attr->attribute_length; i++) {
+    read_u1(r);
+  }
+  
+}
+
+void read_attributes(Reader* r, ClassFile* cf,
     u2 attributes_count, attribute_info* attributes)
 {
   for (u2 i = 0; i < attributes_count; i++) {
     attributes[i].attribute_name_index = read_u2(r);
     attributes[i].attribute_length = read_u4(r);
 
-    attributes[i].info = malloc(attributes[i].attribute_length);
-    if (!attributes[i].info) return;
-
-    for (u4 j = 0; j < attributes[i].attribute_length; j++) {
-      attributes[i].info[j] = read_u1(r);
-    }
+    read_attribute_info(r, cf, &attributes[i]);
   }
 }
 
@@ -135,7 +196,7 @@ void read_fields(Reader *file, ClassFile *cf) {
     field->attributes = (attribute_info*)malloc(
         sizeof(attribute_info) * field->attributes_count); // malloc #6
     // TODO checar caso de alocação não funcionar
-    read_attributes(file, field->attributes_count, field->attributes);
+    read_attributes(file, cf, field->attributes_count, field->attributes);
   }
 }
 
@@ -148,8 +209,8 @@ void read_methods(Reader *file, ClassFile *cf) {
     m->descriptor_index = read_u2(file);
     m->attributes_count = read_u2(file);
     m->attributes = (attribute_info*)malloc(
-        sizeof(attribute_info) * m->attributes_count); // malloc #9
-    read_attributes(file, m->attributes_count, m->attributes);
+        sizeof(attribute_info) * m->attributes_count); // malloc #8
+    read_attributes(file, cf, m->attributes_count, m->attributes);
   }
 }
 
@@ -160,8 +221,8 @@ ClassFile *read_class(Reader *reader) {
     goto cleanup;
   }
   
-  cf = (ClassFile*)malloc(sizeof(ClassFile)); // malloc #1
-  cf->constant_pool = NULL;
+  cf = (ClassFile*)calloc(1, sizeof(ClassFile)); // alloc #1
+  
   cf->magic = read_u4(reader);
   
   if (cf->magic != (u4)MAGIC) {
@@ -174,8 +235,8 @@ ClassFile *read_class(Reader *reader) {
   cf->major_version = read_u2(reader);
   cf->constant_pool_count = read_u2(reader);
  
-  cf->constant_pool = (cp_info*)malloc(sizeof(cp_info) * 
-      (cf->constant_pool_count)); // malloc #2
+  cf->constant_pool = (cp_info*)calloc(cf->constant_pool_count,
+      sizeof(cp_info)); // malloc #2
   if (!cf->constant_pool) goto cleanup;
 
   if (read_constant_pool(reader, cf) != SUCCESS) goto cleanup; // malloc #3
@@ -203,7 +264,7 @@ ClassFile *read_class(Reader *reader) {
   cf->methods_count = read_u2(reader);
   cf->methods = (method_info*)malloc(
       sizeof(method_info) * cf->methods_count
-      ); // malloc #8
+      ); // malloc #7
   read_methods(reader, cf);
 
   return cf;
@@ -230,11 +291,26 @@ void free_constant_pool(ClassFile *cf) {
   cf->constant_pool = NULL;
 }
 
-void free_attributes(attribute_info* attributes, u2 attributes_count) {
+void free_attributes(ClassFile* cf, attribute_info* attributes, u2 attributes_count) {
   if (!attributes) return;
 
   for (int i = 0; i < attributes_count; i++) {
-    free(attributes[i].info);  // free #7
+    const char* name = cp_get_utf8(cf, attributes[i].attribute_name_index);
+
+    if (strcmp(name, "Code") == 0) {
+      if (attributes[i].info.code_attribute) {
+        free(attributes[i].info.code_attribute->code);
+        free(attributes[i].info.code_attribute->exception_table);
+
+        if (attributes[i].info.code_attribute->attributes) {
+            free_attributes(cf, 
+                            attributes[i].info.code_attribute->attributes, 
+                            attributes[i].info.code_attribute->attributes_count);
+        }
+
+        free(attributes[i].info.code_attribute);
+      }
+    }
   }
 
   free(attributes);
@@ -243,7 +319,7 @@ void free_attributes(attribute_info* attributes, u2 attributes_count) {
 void free_methods(ClassFile* cf) {
   if (!cf->methods) return;
   for (int i = 0; i < cf->methods_count; i++) {
-    free_attributes(cf->methods[i].attributes,
+    free_attributes(cf, cf->methods[i].attributes,
                     cf->methods[i].attributes_count);
   }
   free(cf->methods); // free #5
@@ -255,7 +331,7 @@ void free_fields(ClassFile* cf) {
   if (!cf->fields) return;
 
   for (int i = 0; i < cf->fields_count; i++) {
-    free_attributes(cf->fields[i].attributes,
+    free_attributes(cf, cf->fields[i].attributes,
                     cf->fields[i].attributes_count);
   }
 
@@ -266,9 +342,12 @@ void free_fields(ClassFile* cf) {
 void free_classfile(ClassFile* cf) {
   if (cf == NULL) return;
   if (cf->interfaces) free(cf->interfaces);      // free #4
-  if (cf->constant_pool) free_constant_pool(cf); // ->free #3,2
   if (cf->fields) free_fields(cf);               // ->free #5,6,7
-  if (cf->methods) free_methods(cf);             // ->free #8,9,7
+  if (cf->methods) free_methods(cf);             // ->free #9,8,7
+  if (cf->constant_pool) free_constant_pool(cf); // ->free #3,2
+  if (cf->attributes) {
+        free_attributes(cf, cf->attributes, cf->attributes_count);
+  }
   free(cf); // free #1
 }
 

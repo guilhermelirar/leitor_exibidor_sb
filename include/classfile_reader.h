@@ -19,14 +19,30 @@ void free_classfile(ClassFile* classfile);
 void free_constant_pool(ClassFile* cf);
 void free_fields(ClassFile* cf);
 void free_methods(ClassFile* cf);
-void free_attributes(attribute_info* attributes,
+void free_attributes(ClassFile *cf,
+    attribute_info* attributes,
     u2 attributes_count);
 
 int read_constant_pool(Reader *file, ClassFile *cf);
 int read_interfaces(Reader* file, ClassFile* cf);
 void read_methods(Reader* file, ClassFile* cf);
-void read_attributes(Reader* file, 
+
+// LEITURA DE ATRIBUTOS E DERIVADOS
+
+void read_code_attribute(
+  Reader *r,
+  ClassFile* cf,
+  Code_attribute* code_attr
+);
+
+void read_attribute_info(Reader* r, 
+    ClassFile* cf, 
+    attribute_info* attr);
+
+void read_attributes(Reader* file, ClassFile* cf, 
     u2 attributes_count, attribute_info* attributes); 
+
+
 void read_fields(Reader* file, ClassFile* cf);
 u1* read_utf8(Reader* file, u2 length);
 #endif
