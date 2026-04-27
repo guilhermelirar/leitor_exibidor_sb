@@ -13,9 +13,10 @@ $(BIN): $(OBJ)
 	@mkdir -p bin
 	$(CC) $(OBJ) -o $(BIN)
 
-obj/%.o: src/%.c
+obj/%.o: src/%.c include/opcodes.def
 	@mkdir -p obj
 	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
+
 
 clean:
 	rm -rf obj bin
