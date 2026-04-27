@@ -39,6 +39,7 @@ static const access_flag_desc field_flags[] = {
   {ACC_ENUM,        "enum",        "ACC_ENUM"},
 };
 
+
 void print_access_flags(u2 bits,
                         access_context_t ctx,
                         access_format_t fmt,
@@ -204,25 +205,29 @@ void print_interfaces(const ClassFile* cf, FILE* file) {
   }
 }
 
+void print_code(const Code_attribute* code, FILE* out, int indent) {
+  print_indent(indent+2, out);
+  return;
+} 
+
 void print_attributes(const ClassFile *cf, u2 count, 
     attribute_info *attributes, FILE *file, int indent) {
   for (int i = 0; i < count; i++) {
     const char *name = cp_get_utf8(cf, attributes[i].attribute_name_index);
         
     // identação
-    for(int s=0; s<indent; s++) fprintf(file, " ");
-        
+    print_indent(indent, file);
     fprintf(file, "[%d] %s: \n", i, name);
    
     // identificando atributo
     if (strcmp(name, "ConstantValue") == 0) {
-      for(int s=0; s<indent+4; s++) fprintf(file, " ");
+      print_indent(indent+4, file);
       fprintf(file, "Constant Value index: #%d\n", attributes[i].info.constantvalue_index);
     } 
     else if (strcmp(name, "Code") == 0) {
-      for(int s=0; s<indent+4; s++) fprintf(file, " ");
+      print_indent(indent+4, file);
       fprintf(file, "Bytecode length: %u\n", attributes[i].attribute_length);
-      // TODO: disassembly 
+      print_code(attributes[i].info.code_attribute, file, indent+6);    
     }
   }
 }

@@ -6,6 +6,8 @@
 typedef struct {
   const char* name;
   u1 operands;
-} bytecode_info;
+} opcode_info;
+
+extern const opcode_info opcode_table[256];
 
 #endif

@@ -1,5 +1,5 @@
 #include "bytecode.h"
 
-const bytecode_info bytecode_table[256] = {
+const opcode_info opcode_table[256] = {
 #include "opcodes.def"
 };
