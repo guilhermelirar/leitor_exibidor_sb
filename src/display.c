@@ -1,6 +1,7 @@
 // TODO printar significado de identificadores de field
 #include "display.h"
 #include "classfile.h"
+#include "bytecode.h"
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
@@ -206,7 +207,16 @@ void print_interfaces(const ClassFile* cf, FILE* file) {
 }
 
 void print_code(const Code_attribute* code, FILE* out, int indent) {
-  print_indent(indent+2, out);
+  print_indent(indent, out);
+  fprintf(out, "max_stack: %d\n", code->max_stack);
+  
+  print_indent(indent, out);
+  fprintf(out, "max_locals: %d\n", code->max_locals);
+
+  // TODO operandos
+  for (u4 i = 0; i < code->code_length; i++) {
+    // fprintf("", const char *restrict  _Nonnull format, ...)
+  }
   return;
 } 
 
