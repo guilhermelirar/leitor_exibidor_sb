@@ -239,7 +239,8 @@ void print_attributes(const ClassFile *cf, u2 count,
     } 
     else if (strcmp(name, "Code") == 0) {
       print_indent(indent+4, file);
-      fprintf(file, "Bytecode length: %u\n", attributes[i].attribute_length);
+      fprintf(file, "Bytecode length: %u\n", 
+          attributes[i].info.code_attribute->code_length);
       print_code(attributes[i].info.code_attribute, file, indent+6);    
     }
   }
