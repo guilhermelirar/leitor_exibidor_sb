@@ -215,7 +215,10 @@ void print_code(const Code_attribute* code, FILE* out, int indent) {
 
   // TODO operandos
   for (u4 i = 0; i < code->code_length; i++) {
-    // fprintf("", const char *restrict  _Nonnull format, ...)
+    print_indent(indent, out);
+    u1 opc = code->code[i] % 256;
+    fprintf(out, "%d: %s (0x%X)\n", i, opcode_table[opc].name, opc);
+    i += opcode_table[opc].operands;
   }
   return;
 } 
