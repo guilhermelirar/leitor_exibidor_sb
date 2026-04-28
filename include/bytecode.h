@@ -5,7 +5,7 @@
 
 typedef struct {
   const char* name;
-  u1 operands;
+  int operands;
 } opcode_info;
 
 extern const opcode_info opcode_table[256];
