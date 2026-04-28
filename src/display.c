@@ -124,7 +124,7 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
       }
       
       case CONSTANT_InterfaceMethodref:{
-        u2 class_index = entry->info.interface_methodref_info.class_index;
+u2 class_index = entry->info.interface_methodref_info.class_index;
         u2 nt_index    = entry->info.interface_methodref_info.name_and_type_index;
 
         fprintf(file, "InterfaceMethodref %s.%s",
@@ -201,7 +201,7 @@ void print_interfaces(const ClassFile* cf, FILE* file) {
   fprintf(file, "Interfaces: \n");
   for (int i = 0; i < cf->interfaces_count; i++) {
     u2 class_idx = cf->interfaces[i];
-    fprintf(file, "  #%20d: (#%d) %s\n", i, class_idx,
+    fprintf(file, "  #%2d: (#%d) %s\n", i, class_idx,
         cp_class_name(cf, class_idx));
   }
 }
@@ -217,8 +217,15 @@ void print_code(const Code_attribute* code, FILE* out, int indent) {
   for (u4 i = 0; i < code->code_length; i++) {
     print_indent(indent, out);
     u1 opc = code->code[i] % 256;
-    fprintf(out, "%d: %s (0x%X)\n", i, opcode_table[opc].name, opc);
-    i += opcode_table[opc].operands;
+    fprintf(out, "%3d: (0x%0X) %s", i, opc, opcode_table[opc].name);
+    if (opcode_table[opc].operands == 2 
+        && opc != 132 // iinc
+      ) {
+      fprintf(out, " %0d", 
+          (int)(code->code[i+1]<<8) | (int)code->code[i+2]);
+    }
+    if (opcode_table[opc].operands > 0) i += opcode_table[opc].operands;
+    putc('\n', out);
   }
   return;
 } 
