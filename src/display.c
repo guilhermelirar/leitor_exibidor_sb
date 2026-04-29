@@ -2,6 +2,7 @@
 #include "display.h"
 #include "classfile.h"
 #include "bytecode.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
@@ -87,17 +88,17 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
   // assume: cf não nulo, file não nulo
   u2 count = cf->constant_pool_count;
   cp_info* entry = NULL;
+  char buffer[32]; // Buffer auxiliar que vamos usar para o alinhamento
 
   fprintf(file, "Constant Pool (%d):\n", count);
   for (int i = 1; i < count; i++) {
-    fprintf(file, " #%02d = ", i);
+    fprintf(file, " #%-3d = ", i);
     entry = &cf->constant_pool[i];
 
     switch (entry->tag) {
       case CONSTANT_Class: {
         u2 name_index = entry->info.class_info.name_index;
-        fprintf(file, "%-20s (#%d) %s",
-            "Class",
+        fprintf(file, "%-18s #%-14d // %s", "Class", 
             name_index, cp_class_name(cf, i));
         break;
       }
@@ -105,9 +106,10 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
       case CONSTANT_Fieldref: {
         u2 class_index = entry->info.fieldref_info.class_index;
         u2 nt_index    = entry->info.fieldref_info.name_and_type_index;
-
-        fprintf(file, "%-20s %s.%s",
+        sprintf(buffer, "#%d.#%d", class_index, nt_index); 
+        fprintf(file, "%-18s %-15s // %s.%s",
           "Fieldref",
+          buffer,
           cp_class_name(cf, class_index),
           cp_nameandtype_name(cf, nt_index)
         );
@@ -117,9 +119,10 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
       case CONSTANT_Methodref: {
         u2 class_index = entry->info.methodref_info.class_index;
         u2 nt_index    = entry->info.methodref_info.name_and_type_index;
-
-        fprintf(file, "%-20s %s.%s",
+        sprintf(buffer, "#%d.#%d", class_index, nt_index);
+        fprintf(file, "%-18s %-15s // %s.%s",
           "Methodref",
+          buffer,
           cp_class_name(cf, class_index),
           cp_nameandtype_name(cf, nt_index)
         );
@@ -129,9 +132,10 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
       case CONSTANT_InterfaceMethodref: {
         u2 class_index = entry->info.interface_methodref_info.class_index;
         u2 nt_index    = entry->info.interface_methodref_info.name_and_type_index;
-
-        fprintf(file, "%-20s %s.%s",
+        sprintf(buffer, "#%d.#%d", class_index, nt_index);
+        fprintf(file, "%-18s %-15s // %s.%s",
           "InterfaceMethodref",
+          buffer,
           cp_class_name(cf, class_index),
           cp_nameandtype_name(cf, nt_index)
         );
@@ -141,16 +145,17 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
       case CONSTANT_NameAndType:  {
         u2 nt_index = entry->info.name_and_type_info.name_index;
         u2 desc_index = entry->info.name_and_type_info.descriptor_index;
-        fprintf(file, "%-20s #%d:%d %s:%s", 
+        sprintf(buffer, "#%d:#%d", nt_index, desc_index);
+        fprintf(file, "%-18s %-15s // %s:%s", 
             "NameAndType",
-            nt_index, desc_index, 
+            buffer, 
             cp_nameandtype_name(cf, i), 
             cp_get_utf8(cf, desc_index));
         break;
       }
 
       case CONSTANT_Utf8: {
-        fprintf(file, "%-20s %s",
+        fprintf(file, "%-18s %s",
             "UTF-8",
             cp_get_utf8(cf, i));
         break;
@@ -158,14 +163,13 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
      
       case CONSTANT_String: {
         u2 utf8_idx = entry->info.string_info.string_index;
-        fprintf(file, "%-20s (#%d) %s",
-            "String",
+        fprintf(file, "%-18s #%-14d // %s", "String", 
             utf8_idx, cp_get_utf8(cf, utf8_idx));
         break;
       }
 
       case CONSTANT_Integer:
-        fprintf(file, "%-20s %d",
+        fprintf(file, "%-18s %d",
             "Integer",
             entry->info.int_info.bytes);
         break;
@@ -174,7 +178,7 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
         float f;
         u4 bits = entry->info.float_info.bytes;
         memcpy(&f, &bits, sizeof(float));
-        fprintf(file, "%-20s %f", "Float", f);
+        fprintf(file, "%-18s %f", "Float", f);
         break;
       }
       
@@ -182,7 +186,7 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
         u8 long_hl = ((u8)entry->info.long_info.h_bytes << 32) | 
           (u8)entry->info.long_info.l_bytes; 
 
-        fprintf(file, "%-20s %" PRId64, "Long", long_hl);
+        fprintf(file, "%-18s %" PRId64, "Long", long_hl);
         i++;
         break;
       }
@@ -192,7 +196,7 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
         u8 bits = ((u8)entry->info.double_info.h_bytes << 32) | 
           ((u8) entry->info.double_info.l_bytes);
         memcpy(&d, &bits, sizeof(double));
-        fprintf(file, "%-20s %f", "Double", d);
+        fprintf(file, "%-18s %f", "Double", d);
         i++;
         break;
       }
@@ -204,6 +208,7 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
     putc('\n', file);
   } 
 }
+
 
 void print_interfaces(const ClassFile* cf, FILE* file) {
   fprintf(file, "Interfaces: \n");
@@ -221,9 +226,9 @@ void print_operands(const u1* code, u4* pc, FILE* out) {
   if (!opi->operands) return;
 
   // Valor dos operandos
-  int val = (int)code[*pc+1];
+  u2 val = (u2)code[*pc+1];
   if (opi->operands == 2)
-    val = val << 8 | (int)code[*pc+2];
+    val = val << 8 | (u2)code[*pc+2];
 
   if (opi->type == OP_CP) 
     fprintf(out, "#%d", val);
@@ -232,7 +237,7 @@ void print_operands(const u1* code, u4* pc, FILE* out) {
     fprintf(out, "%d", val);
 
   if (opi->type == OP_BRANCH)
-    fprintf(out, "%d (PC + %d)", *pc+val, val);
+    fprintf(out, "%d (offset: %d)", *pc+(int16_t)val, (int16_t)val);
 
   if (opcode_table[opc].operands > 0) 
     *pc += opi->operands;
