@@ -20,6 +20,9 @@ static inline void print_indent(int level, FILE *f) {
     fputc(' ', f);
   }
 }
+
+void print_operands(const u1* code, u4* pc, FILE* out);
+
 void print_code(const Code_attribute* code, FILE* out, int indent);  
 
 void print_method_definition(const ClassFile* cf, method_info* m, FILE* out);
