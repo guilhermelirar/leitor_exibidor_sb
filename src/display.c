@@ -123,8 +123,8 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
         break;
       }
       
-      case CONSTANT_InterfaceMethodref:{
-u2 class_index = entry->info.interface_methodref_info.class_index;
+      case CONSTANT_InterfaceMethodref: {
+        u2 class_index = entry->info.interface_methodref_info.class_index;
         u2 nt_index    = entry->info.interface_methodref_info.name_and_type_index;
 
         fprintf(file, "InterfaceMethodref %s.%s",
@@ -206,6 +206,30 @@ void print_interfaces(const ClassFile* cf, FILE* file) {
   }
 }
 
+
+void print_operands(const u1* code, u4* pc, FILE* out) {
+  u1 opc = code[*pc];
+  const opcode_info* opi = &opcode_table[opc];
+  if (!opi->operands) return;
+
+  // Valor dos operandos
+  int val = (int)code[*pc+1];
+  if (opi->operands == 2)
+    val = val << 8 | (int)code[*pc+2];
+
+  if (opi->type == OP_CP) 
+    fprintf(out, "#%d", val);
+
+  if (opi->type == OP_LOCAL || opi->type == OP_LITERAL)
+    fprintf(out, "%d", val);
+
+  if (opi->type == OP_BRANCH)
+    fprintf(out, "%d (PC + %d)", *pc+val, val);
+
+  if (opcode_table[opc].operands > 0) 
+    *pc += opi->operands;
+} 
+
 void print_code(const Code_attribute* code, FILE* out, int indent) {
   print_indent(indent, out);
   fprintf(out, "max_stack: %d\n", code->max_stack);
@@ -217,14 +241,8 @@ void print_code(const Code_attribute* code, FILE* out, int indent) {
   for (u4 i = 0; i < code->code_length; i++) {
     print_indent(indent, out);
     u1 opc = code->code[i] % 256;
-    fprintf(out, "%3d: (0x%0X) %s", i, opc, opcode_table[opc].name);
-    if (opcode_table[opc].operands == 2 
-        && opc != 132 // iinc
-      ) {
-      fprintf(out, " %0d", 
-          (int)(code->code[i+1]<<8) | (int)code->code[i+2]);
-    }
-    if (opcode_table[opc].operands > 0) i += opcode_table[opc].operands;
+    fprintf(out, "%3d: (0x%0X) %s ", i, opc, opcode_table[opc].name);
+    print_operands(code->code, &i, out);
     putc('\n', out);
   }
   return;
