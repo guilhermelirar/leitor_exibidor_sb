@@ -241,7 +241,7 @@ void print_code(const Code_attribute* code, FILE* out, int indent) {
   for (u4 i = 0; i < code->code_length; i++) {
     print_indent(indent, out);
     u1 opc = code->code[i] % 256;
-    fprintf(out, "%3d: (0x%0X) %s ", i, opc, opcode_table[opc].name);
+    fprintf(out, "%3d: (0x%02X) %s ", i, opc, opcode_table[opc].name);
     print_operands(code->code, &i, out);
     putc('\n', out);
   }
@@ -288,7 +288,7 @@ void print_class_member(const ClassFile* cf,
   
   // Exibe a assinatura em caso de ser método
   if (access_ctx == ACCESS_METHOD) {
-    printf("      Definition: ");
+    fputs("      Definition: ", file);
     print_method_definition(cf, &cf->methods[index], file);
     putc('\n', file);
   }

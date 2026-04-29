@@ -24,9 +24,13 @@ int main(int argc, const char **argv) {
   free(reader.buf);
   if (!class) return 1;
 
+  //FILE* out = fopen("output.txt", "w");
+  //printclass(class, out);
+
   printclass(class, stdout);
   free_classfile(class);
 
   fclose(file);
+  //fclose(out);
   return 0;
 }
