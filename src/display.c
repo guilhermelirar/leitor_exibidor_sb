@@ -41,6 +41,28 @@ static const access_flag_desc field_flags[] = {
   {ACC_ENUM,        "enum",        "ACC_ENUM"},
 };
 
+void print_utf8(FILE* out, const char* str) {
+  if (!str) return;
+  for (int i = 0; str[i] != '\0'; i++) {
+    switch (str[i]) {
+      case '\n': 
+        fprintf(out, "\\n"); 
+          break;
+      case '\r': 
+          fprintf(out, "\\r"); 
+          break;
+      case '\t': 
+          fprintf(out, "\\t"); 
+          break;
+      case '\\': 
+          fprintf(out, "\\\\"); 
+          break;
+      default:
+          fputc(str[i], out);
+          break;
+    }
+  }
+}
 
 void print_access_flags(u2 bits,
                         access_context_t ctx,
@@ -82,7 +104,6 @@ void print_access_flags(u2 bits,
     }
   }
 }
-
 
 void print_class_constant_pool(const ClassFile *cf, FILE *file) {
   // assume: cf não nulo, file não nulo
@@ -155,16 +176,15 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
       }
 
       case CONSTANT_Utf8: {
-        fprintf(file, "%-18s %s",
-            "UTF-8",
-            cp_get_utf8(cf, i));
+        fprintf(file, "%-18s ", "UTF-8");
+        print_utf8(file, cp_get_utf8(cf, i));
         break;
       }
      
       case CONSTANT_String: {
         u2 utf8_idx = entry->info.string_info.string_index;
-        fprintf(file, "%-18s #%-14d // %s", "String", 
-            utf8_idx, cp_get_utf8(cf, utf8_idx));
+        fprintf(file, "%-18s #%-14d // ", "String", utf8_idx);
+        print_utf8(file, cp_get_utf8(cf, utf8_idx));
         break;
       }
 
