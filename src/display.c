@@ -391,11 +391,102 @@ void printclass(const ClassFile *cf, FILE *file) {
 }
 
 
+int print_field_descriptor(FILE *out, const char *str, int dimensions) {
+  int i = 0;
+  char base_char = str[i];
+
+  switch (base_char) {
+    case '\0':
+      return i;
+
+    case 'B':
+      fputs("byte", out);
+      break;
+    
+    case 'C':
+      fputs("char", out);
+      break;
+
+    case 'D':
+      fputs("double", out);
+      break;
+
+    case 'F':
+      fputs("float", out);
+      break;
+
+    case 'I':
+      fputs("int", out);
+      break;
+
+    case 'J':
+      fputs("long", out);
+      break;
+   
+    case 'S':
+      fputs("short", out);
+      break;
+   
+    case 'V':
+      fputs("void", out);
+      break;
+
+    case 'Z':
+      fputs("boolean", out);
+      break;
+
+    case '[':
+      return 1 + print_field_descriptor(out, 
+          &str[i+1], dimensions + 1);
+
+    case 'L': {
+      i++;
+      for(; str[i] != '\0' && str[i] != ';'; i++) {
+        if (str[i] == '/') fputc('.', out);
+        else fputc(str[i], out);
+      }
+      // i++;
+      break;
+    }
+
+    default:
+      fprintf(out, "<unk '%c'>", str[i]);
+      break;
+  }
+
+  while (dimensions--) fputs("[]", out);
+  return i + 1;
+}
+
 void print_method_definition(const ClassFile* cf, method_info* m, FILE* out) {
   print_access_flags(m->access_flags, 
         ACCESS_METHOD, ACCESS_FMT_JAVA, out);
+  fputc(' ', out);
+  
+  const char* nt_str = cp_get_utf8(cf, m->descriptor_index);
+  
+  int i = 0; 
+  while (nt_str[i] && nt_str[i] != ')') i++;
+  if (nt_str[i] == ')') i++;
+
+  print_field_descriptor(out, &nt_str[i], 0);
+  fputc(' ', out);
   // TODO implementar
-  fprintf(out, 
-      " <not_implemented>%s(<not implemented>)", 
-      cp_get_utf8(cf, m->name_index));
+  fputs(cp_get_utf8(cf, m->name_index), out);
+  
+  i = 0; 
+  while (nt_str[i] && nt_str[i] != '(') i++;
+  if (nt_str[i] == '(') {
+    fputc(nt_str[i], out);
+    i++;
+  }
+
+  while (nt_str[i] && nt_str[i] != ')') {
+    i += print_field_descriptor(out, &nt_str[i], 0);
+
+    if (nt_str[i] != ')') {
+      fputs(", ", out); 
+    }
+  }
+  fputs(");", out); 
 }
