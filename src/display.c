@@ -391,13 +391,12 @@ void printclass(const ClassFile *cf, FILE *file) {
 }
 
 
-int print_field_descriptor(FILE *out, const char *str, int dimensions) {
-  int i = 0;
-  char base_char = str[i];
+void print_field_descriptor(FILE *out, const char *str, int* pos, int dimensions) {
+  char base_char = str[*pos];
 
   switch (base_char) {
     case '\0':
-      return i;
+      return;
 
     case 'B':
       fputs("byte", out);
@@ -436,26 +435,28 @@ int print_field_descriptor(FILE *out, const char *str, int dimensions) {
       break;
 
     case '[':
-      return 1 + print_field_descriptor(out, 
-          &str[i+1], dimensions + 1);
+      (*pos)++;
+      print_field_descriptor(out, 
+          str, pos, dimensions + 1);
+      return;
+      break;
 
     case 'L': {
-      i++;
-      for(; str[i] != '\0' && str[i] != ';'; i++) {
-        if (str[i] == '/') fputc('.', out);
-        else fputc(str[i], out);
+      (*pos)++;
+      for(; str[*pos] != '\0' && str[*pos] != ';'; (*pos)++) {
+        if (str[*pos] == '/') fputc('.', out);
+        else fputc(str[*pos], out);
       }
-      // i++;
       break;
     }
 
     default:
-      fprintf(out, "<unk '%c'>", str[i]);
+      fprintf(out, "<unk '%c'>", str[*pos]);
       break;
   }
 
   while (dimensions--) fputs("[]", out);
-  return i + 1;
+  (*pos)++;
 }
 
 void print_method_definition(const ClassFile* cf, method_info* m, FILE* out) {
@@ -469,7 +470,7 @@ void print_method_definition(const ClassFile* cf, method_info* m, FILE* out) {
   while (nt_str[i] && nt_str[i] != ')') i++;
   if (nt_str[i] == ')') i++;
 
-  print_field_descriptor(out, &nt_str[i], 0);
+  print_field_descriptor(out, nt_str, &i, 0);
   fputc(' ', out);
   // TODO implementar
   fputs(cp_get_utf8(cf, m->name_index), out);
@@ -481,12 +482,10 @@ void print_method_definition(const ClassFile* cf, method_info* m, FILE* out) {
     i++;
   }
 
-  while (nt_str[i] && nt_str[i] != ')') {
-    i += print_field_descriptor(out, &nt_str[i], 0);
-
-    if (nt_str[i] != ')') {
-      fputs(", ", out); 
-    }
+  while (nt_str[i] != '\0' && nt_str[i] != ')') {
+    print_field_descriptor(out, nt_str, &i, 0);
+    if (nt_str[i] != ')') fputs(", ", out);
   }
+
   fputs(");", out); 
 }

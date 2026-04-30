@@ -21,7 +21,7 @@ static inline void print_indent(int level, FILE *f) {
   }
 }
 
-int print_field_descriptor(FILE* out, const char* str, int dimensions);
+void print_field_descriptor(FILE* out, const char* str, int* pos, int dimensions);
 
 void print_utf8(FILE* out, const char* str);
 
