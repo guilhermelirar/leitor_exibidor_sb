@@ -13,7 +13,7 @@ $(BIN): $(OBJ)
 	@mkdir -p bin
 	$(CC) $(OBJ) -o $(BIN)
 
-obj/%.o: src/%.c include/opcodes.def
+obj/%.o: src/%.c include/optable.def
 	@mkdir -p obj
 	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
