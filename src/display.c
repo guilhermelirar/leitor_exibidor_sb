@@ -2,6 +2,7 @@
 #include "display.h"
 #include "classfile.h"
 #include "bytecode.h"
+#include "reader.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -240,7 +241,7 @@ void print_interfaces(const ClassFile* cf, FILE* file) {
 }
 
 
-void print_operands(const u1* code, u4* pc, FILE* out) {
+void print_operands(const u1* code, u4* pc, FILE* out, int indent) {
   u1 opc = code[*pc];
   const opcode_info* opi = &opcode_table[opc];
   if (!opi->operands) return;
@@ -259,6 +260,37 @@ void print_operands(const u1* code, u4* pc, FILE* out) {
   if (opi->type == OP_BRANCH)
     fprintf(out, "%d (offset: %d)", *pc+(int16_t)val, (int16_t)val);
 
+  if (opi->type == OP_SPECIAL) {
+    switch (opc) {
+      case opc_tableswitch: {
+        u4 base_pc = *pc;
+        while (((*pc) + 1) % 4 != 0) (*pc)++;
+        Reader r = {code, 500, (*pc)+1};
+        u4 default_offset = read_u4(&r);
+        u4 low_byte = read_u4(&r);
+        u4 high_byte = read_u4(&r);
+
+        // tabela de salto
+        fputc('\n', out);
+        print_indent(indent, out);
+        fprintf(out, "(%d to %d)\n", low_byte, high_byte);
+        for (u4 i = 0; i <= high_byte - low_byte; i++) {
+          print_indent(indent, out);
+          fprintf(out, "%3d: %-3d\n", low_byte + i, base_pc + read_u4(&r));
+        }
+
+        print_indent(indent, out);
+        fprintf(out, "default: %-3d", default_offset + base_pc);
+
+        *pc = r.pos - 1;
+        break;
+      }
+      default:
+        break;
+
+    }
+  }
+
   if (opcode_table[opc].operands > 0) 
     *pc += opi->operands;
 } 
@@ -275,7 +307,7 @@ void print_code(const Code_attribute* code, FILE* out, int indent) {
     print_indent(indent, out);
     u1 opc = code->code[i] % 256;
     fprintf(out, "%3d: (0x%02X) %-15s ", i, opc, opcode_table[opc].name);
-    print_operands(code->code, &i, out);
+    print_operands(code->code, &i, out, indent+5);
     putc('\n', out);
   }
   return;
