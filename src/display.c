@@ -241,34 +241,31 @@ void print_interfaces(const ClassFile* cf, FILE* file) {
 }
 
 
-void print_operands(const u1* code, u4* pc, FILE* out, int indent) {
-  u1 opc = code[*pc];
+void print_operands(Reader* code_reader, u1 opc, FILE* out, int indent) {
   const opcode_info* opi = &opcode_table[opc];
+  u4 base_pc = code_reader->pos - 1;
   if (!opi->operands) return;
 
-  // Valor dos operandos
-  u2 val = (u2)code[*pc+1];
-  if (opi->operands == 2)
-    val = val << 8 | (u2)code[*pc+2];
-
   if (opi->type == OP_CP) 
-    fprintf(out, "#%d", val);
+    fprintf(out, "#%d", read_u2(code_reader));
 
   if (opi->type == OP_LOCAL || opi->type == OP_LITERAL)
-    fprintf(out, "%d", val);
+    fprintf(out, "%d", read_u2(code_reader));
 
-  if (opi->type == OP_BRANCH)
-    fprintf(out, "%d (offset: %d)", *pc+(int16_t)val, (int16_t)val);
+  if (opi->type == OP_BRANCH) {
+    u2 val = read_u2(code_reader);
+    fprintf(out, "%d", 
+        base_pc + val);
+  }
 
   if (opi->type == OP_SPECIAL) {
     switch (opc) {
+      // tableswitch
       case opc_tableswitch: {
-        u4 base_pc = *pc;
-        while (((*pc) + 1) % 4 != 0) (*pc)++;
-        Reader r = {code, 500, (*pc)+1};
-        u4 default_offset = read_u4(&r);
-        u4 low_byte = read_u4(&r);
-        u4 high_byte = read_u4(&r);
+        while (code_reader->pos % 4 != 0) read_u1(code_reader);
+        u4 default_offset = read_u4(code_reader);
+        u4 low_byte = read_u4(code_reader);
+        u4 high_byte = read_u4(code_reader);
 
         // tabela de salto
         fputc('\n', out);
@@ -276,13 +273,11 @@ void print_operands(const u1* code, u4* pc, FILE* out, int indent) {
         fprintf(out, "(%d to %d)\n", low_byte, high_byte);
         for (u4 i = 0; i <= high_byte - low_byte; i++) {
           print_indent(indent, out);
-          fprintf(out, "%3d: %-3d\n", low_byte + i, base_pc + read_u4(&r));
+          fprintf(out, "%3d: %-3d\n", low_byte + i, base_pc + read_u4(code_reader));
         }
 
         print_indent(indent, out);
         fprintf(out, "default: %-3d", default_offset + base_pc);
-
-        *pc = r.pos - 1;
         break;
       }
       default:
@@ -290,26 +285,28 @@ void print_operands(const u1* code, u4* pc, FILE* out, int indent) {
 
     }
   }
-
-  if (opcode_table[opc].operands > 0) 
-    *pc += opi->operands;
 } 
 
 void print_code(const Code_attribute* code, FILE* out, int indent) {
   print_indent(indent, out);
-  fprintf(out, "max_stack: %d\n", code->max_stack);
-  
-  print_indent(indent, out);
-  fprintf(out, "max_locals: %d\n", code->max_locals);
+  fprintf(out, "max_stack: %d, max_locals: %d\n", code->max_stack,
+      code->max_locals);
 
+  Reader code_reader = { code->code, code->code_length, 0 };
+  
   // TODO operandos
-  for (u4 i = 0; i < code->code_length; i++) {
+  while (code_reader.pos < code_reader.size) {
     print_indent(indent, out);
-    u1 opc = code->code[i] % 256;
-    fprintf(out, "%3d: (0x%02X) %-15s ", i, opc, opcode_table[opc].name);
-    print_operands(code->code, &i, out, indent+5);
-    putc('\n', out);
+    u4 pc = code_reader.pos;
+    u1 opc = read_u1(&code_reader);
+    fprintf(out, "%3d: (0x%02X) %-15s ", pc, 
+        opc, opcode_table[opc].name);
+
+    print_operands(&code_reader, opc, out, indent+5);
+    fputc('\n', out);
   }
+
+
   return;
 } 
 

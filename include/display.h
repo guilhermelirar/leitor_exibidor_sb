@@ -2,6 +2,7 @@
 #define DISPLAY
 
 #include "classfile.h"
+#include "reader.h"
 #include <stdio.h>
 
 typedef struct {
@@ -25,7 +26,7 @@ void print_field_descriptor(FILE* out, const char* str, int* pos, int dimensions
 
 void print_utf8(FILE* out, const char* str);
 
-void print_operands(const u1* code, u4* pc, FILE* out, int indent);
+void print_operands(Reader *code_reader, u1 opc, FILE* out, int indent);
 
 void print_code(const Code_attribute* code, FILE* out, int indent);  
 
