@@ -288,18 +288,30 @@ void print_operands(const ClassFile* cf, Reader *code_reader,
   if (!opi->operands) return;
 
   if (opi->type == OP_CP) {
-    u2 idx = read_u2(code_reader);
+    u2 idx = opi->operands == 2 ? read_u2(code_reader) :
+      read_u1(code_reader);
     fprintf(out, "#%d // ", idx);
     print_cp_value(idx, cf, out);
   }
 
-  if (opi->type == OP_LOCAL || opi->type == OP_LITERAL)
-    fprintf(out, "%d", read_u2(code_reader));
+if (opi->type == OP_LOCAL || opi->type == OP_LITERAL) {
+    if (opi->operands == 2) {
+      fprintf(out, "%d", (int16_t)read_u2(code_reader));
+    } else {
+      fprintf(out, "%d", (int8_t)read_u1(code_reader));
+    }
+  }
 
   if (opi->type == OP_BRANCH) {
-    u2 val = read_u2(code_reader);
-    fprintf(out, "%d", 
-        base_pc + val);
+    int32_t offset;
+    if (opi->operands == 2) {
+      offset = (int16_t)read_u2(code_reader);
+    } else if (opi->operands == 4) {
+      offset = (int32_t)read_u4(code_reader); 
+    } else {
+      offset = (int8_t)read_u1(code_reader);
+    }
+    fprintf(out, "%d", base_pc + offset);
   }
 
   if (opi->type == OP_SPECIAL) {
