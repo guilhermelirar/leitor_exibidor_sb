@@ -106,11 +106,85 @@ void print_access_flags(u2 bits,
   }
 }
 
+void print_cp_value(u2 idx, const ClassFile *cf, FILE *file) {
+  if (idx == 0 || idx >= cf->constant_pool_count) return;
+
+  cp_info* entry = &cf->constant_pool[idx];
+  switch (entry->tag) {
+    case CONSTANT_Class:
+      fputs(cp_class_name(cf, idx), file);
+      break;
+
+    case CONSTANT_Fieldref:
+      fprintf(file, "%s.%s", 
+        cp_class_name(cf, entry->info.fieldref_info.class_index),
+        cp_nameandtype_name(cf, entry->info.fieldref_info.name_and_type_index));
+      break;
+
+    case CONSTANT_Methodref:
+      fprintf(file, "%s.%s", 
+        cp_class_name(cf, entry->info.methodref_info.class_index),
+        cp_nameandtype_name(cf, entry->info.methodref_info.name_and_type_index));
+      break;
+
+    case CONSTANT_InterfaceMethodref:
+      fprintf(file, "%s.%s", 
+        cp_class_name(cf, entry->info.interface_methodref_info.class_index),
+        cp_nameandtype_name(cf, 
+          entry->info.interface_methodref_info.name_and_type_index));
+      break;
+
+    case CONSTANT_NameAndType: 
+      fprintf(file, "%s:%s", 
+        cp_nameandtype_name(cf, idx),
+        cp_get_utf8(cf, entry->info.name_and_type_info.descriptor_index));
+      break;
+
+    case CONSTANT_Utf8: 
+      print_utf8(file, cp_get_utf8(cf, idx));
+      break;
+      
+    case CONSTANT_String: 
+      print_utf8(file, cp_get_utf8(cf, entry->info.string_info.string_index));
+      break;
+
+    case CONSTANT_Integer:
+      fprintf(file, "%d", entry->info.int_info.bytes);
+      break;
+
+    case CONSTANT_Float: {
+      float f;
+      u4 bits = entry->info.float_info.bytes;
+      memcpy(&f, &bits, sizeof(float));
+      fprintf(file, "%f", f);
+      break;
+    }
+      
+    case CONSTANT_Long: {
+      u8 long_hl = ((u8)entry->info.long_info.h_bytes << 32) | 
+                   (u8)entry->info.long_info.l_bytes; 
+      fprintf(file, "%" PRId64, (int64_t)long_hl);
+      break;
+    }
+
+    case CONSTANT_Double: {
+      double d;
+      u8 bits = ((u8)entry->info.double_info.h_bytes << 32) | 
+                ((u8)entry->info.double_info.l_bytes);
+      memcpy(&d, &bits, sizeof(double));
+      fprintf(file, "%f", d);
+      break;
+    }
+
+    default:
+      break;
+  }
+}
+
 void print_class_constant_pool(const ClassFile *cf, FILE *file) {
-  // assume: cf não nulo, file não nulo
   u2 count = cf->constant_pool_count;
   cp_info* entry = NULL;
-  char buffer[32]; // Buffer auxiliar que vamos usar para o alinhamento
+  char buffer[32]; // Buffer para montar a coluna de índices (ex: #7.#25)
 
   fprintf(file, "Constant Pool (%d):\n", count);
   for (int i = 1; i < count; i++) {
@@ -118,116 +192,82 @@ void print_class_constant_pool(const ClassFile *cf, FILE *file) {
     entry = &cf->constant_pool[i];
 
     switch (entry->tag) {
-      case CONSTANT_Class: {
-        u2 name_index = entry->info.class_info.name_index;
-        fprintf(file, "%-18s #%-14d // %s", "Class", 
-            name_index, cp_class_name(cf, i));
+      case CONSTANT_Class:
+        snprintf(buffer, sizeof(buffer), "#%d", entry->info.class_info.name_index);
+        fprintf(file, "%-18s %-15s // ", "Class", buffer);
+        print_cp_value(i, cf, file);
         break;
-      }
 
-      case CONSTANT_Fieldref: {
-        u2 class_index = entry->info.fieldref_info.class_index;
-        u2 nt_index    = entry->info.fieldref_info.name_and_type_index;
-        sprintf(buffer, "#%d.#%d", class_index, nt_index); 
-        fprintf(file, "%-18s %-15s // %s.%s",
-          "Fieldref",
-          buffer,
-          cp_class_name(cf, class_index),
-          cp_nameandtype_name(cf, nt_index)
-        );
+      case CONSTANT_Fieldref:
+        snprintf(buffer, sizeof(buffer), "#%d.#%d", 
+          entry->info.fieldref_info.class_index, 
+          entry->info.fieldref_info.name_and_type_index);
+        fprintf(file, "%-18s %-15s // ", "Fieldref", buffer);
+        print_cp_value(i, cf, file);
         break;
-      }
-      
-      case CONSTANT_Methodref: {
-        u2 class_index = entry->info.methodref_info.class_index;
-        u2 nt_index    = entry->info.methodref_info.name_and_type_index;
-        sprintf(buffer, "#%d.#%d", class_index, nt_index);
-        fprintf(file, "%-18s %-15s // %s.%s",
-          "Methodref",
-          buffer,
-          cp_class_name(cf, class_index),
-          cp_nameandtype_name(cf, nt_index)
-        );
-        break;
-      }
-      
-      case CONSTANT_InterfaceMethodref: {
-        u2 class_index = entry->info.interface_methodref_info.class_index;
-        u2 nt_index    = entry->info.interface_methodref_info.name_and_type_index;
-        sprintf(buffer, "#%d.#%d", class_index, nt_index);
-        fprintf(file, "%-18s %-15s // %s.%s",
-          "InterfaceMethodref",
-          buffer,
-          cp_class_name(cf, class_index),
-          cp_nameandtype_name(cf, nt_index)
-        );
-        break;
-      }
-      
-      case CONSTANT_NameAndType:  {
-        u2 nt_index = entry->info.name_and_type_info.name_index;
-        u2 desc_index = entry->info.name_and_type_info.descriptor_index;
-        sprintf(buffer, "#%d:#%d", nt_index, desc_index);
-        fprintf(file, "%-18s %-15s // %s:%s", 
-            "NameAndType",
-            buffer, 
-            cp_nameandtype_name(cf, i), 
-            cp_get_utf8(cf, desc_index));
-        break;
-      }
 
-      case CONSTANT_Utf8: {
+      case CONSTANT_Methodref:
+        snprintf(buffer, sizeof(buffer), "#%d.#%d", 
+          entry->info.methodref_info.class_index, 
+          entry->info.methodref_info.name_and_type_index);
+        fprintf(file, "%-18s %-15s // ", "Methodref", buffer);
+        print_cp_value(i, cf, file);
+        break;
+
+      case CONSTANT_InterfaceMethodref:
+        snprintf(buffer, sizeof(buffer), "#%d.#%d", 
+          entry->info.interface_methodref_info.class_index, 
+          entry->info.interface_methodref_info.name_and_type_index);
+        fprintf(file, "%-18s %-15s // ", "InterfaceMethodref", buffer);
+        print_cp_value(i, cf, file);
+        break;
+
+      case CONSTANT_NameAndType:
+        snprintf(buffer, sizeof(buffer), "#%d:#%d", 
+          entry->info.name_and_type_info.name_index, 
+          entry->info.name_and_type_info.descriptor_index);
+        fprintf(file, "%-18s %-15s // ", "NameAndType", buffer);
+        print_cp_value(i, cf, file);
+        break;
+
+      case CONSTANT_Utf8:
         fprintf(file, "%-18s ", "UTF-8");
-        print_utf8(file, cp_get_utf8(cf, i));
+        print_cp_value(i, cf, file);
         break;
-      }
-     
-      case CONSTANT_String: {
-        u2 utf8_idx = entry->info.string_info.string_index;
-        fprintf(file, "%-18s #%-14d // ", "String", utf8_idx);
-        print_utf8(file, cp_get_utf8(cf, utf8_idx));
+
+      case CONSTANT_String:
+        snprintf(buffer, sizeof(buffer), "#%d", entry->info.string_info.string_index);
+        fprintf(file, "%-18s %-15s // ", "String", buffer);
+        print_cp_value(i, cf, file);
         break;
-      }
 
       case CONSTANT_Integer:
-        fprintf(file, "%-18s %d",
-            "Integer",
-            entry->info.int_info.bytes);
+        fprintf(file, "%-18s ", "Integer");
+        print_cp_value(i, cf, file);
         break;
 
-      case CONSTANT_Float: {
-        float f;
-        u4 bits = entry->info.float_info.bytes;
-        memcpy(&f, &bits, sizeof(float));
-        fprintf(file, "%-18s %f", "Float", f);
+      case CONSTANT_Float:
+        fprintf(file, "%-18s ", "Float");
+        print_cp_value(i, cf, file);
         break;
-      }
-      
-      case CONSTANT_Long: {
-        u8 long_hl = ((u8)entry->info.long_info.h_bytes << 32) | 
-          (u8)entry->info.long_info.l_bytes; 
 
-        fprintf(file, "%-18s %" PRId64, "Long", long_hl);
-        i++;
+      case CONSTANT_Long:
+        fprintf(file, "%-18s ", "Long");
+        print_cp_value(i, cf, file);
+        i++; 
         break;
-      }
 
-      case CONSTANT_Double: {
-        double d;
-        u8 bits = ((u8)entry->info.double_info.h_bytes << 32) | 
-          ((u8) entry->info.double_info.l_bytes);
-        memcpy(&d, &bits, sizeof(double));
-        fprintf(file, "%-18s %f", "Double", d);
-        i++;
+      case CONSTANT_Double:
+        fprintf(file, "%-18s ", "Double");
+        print_cp_value(i, cf, file);
+        i++; 
         break;
-      }
 
       default:
-        fprintf(stderr, "Error: constant tag \"%d\" not recognized\n", entry->tag);
-        return;
+        break;
     }
     putc('\n', file);
-  } 
+  }
 }
 
 
@@ -241,13 +281,17 @@ void print_interfaces(const ClassFile* cf, FILE* file) {
 }
 
 
-void print_operands(Reader* code_reader, u1 opc, FILE* out, int indent) {
+void print_operands(const ClassFile* cf, Reader *code_reader,
+    u1 opc, FILE* out, int indent) {
   const opcode_info* opi = &opcode_table[opc];
   u4 base_pc = code_reader->pos - 1;
   if (!opi->operands) return;
 
-  if (opi->type == OP_CP) 
-    fprintf(out, "#%d", read_u2(code_reader));
+  if (opi->type == OP_CP) {
+    u2 idx = read_u2(code_reader);
+    fprintf(out, "#%d // ", idx);
+    print_cp_value(idx, cf, out);
+  }
 
   if (opi->type == OP_LOCAL || opi->type == OP_LITERAL)
     fprintf(out, "%d", read_u2(code_reader));
@@ -287,7 +331,8 @@ void print_operands(Reader* code_reader, u1 opc, FILE* out, int indent) {
   }
 } 
 
-void print_code(const Code_attribute* code, FILE* out, int indent) {
+void print_code(const ClassFile *cf, 
+    const Code_attribute* code, FILE* out, int indent) {
   print_indent(indent, out);
   fprintf(out, "max_stack: %d, max_locals: %d\n", code->max_stack,
       code->max_locals);
@@ -299,10 +344,9 @@ void print_code(const Code_attribute* code, FILE* out, int indent) {
     print_indent(indent, out);
     u4 pc = code_reader.pos;
     u1 opc = read_u1(&code_reader);
-    fprintf(out, "%3d: (0x%02X) %-15s ", pc, 
-        opc, opcode_table[opc].name);
+    fprintf(out, "%3d: %-15s ", pc, opcode_table[opc].name);
 
-    print_operands(&code_reader, opc, out, indent+5);
+    print_operands(cf, &code_reader, opc, out, indent+5);
     fputc('\n', out);
   }
 
@@ -328,7 +372,7 @@ void print_attributes(const ClassFile *cf, u2 count,
       print_indent(indent+4, file);
       fprintf(file, "Bytecode length: %u\n", 
           attributes[i].info.code_attribute->code_length);
-      print_code(attributes[i].info.code_attribute, file, indent+6);    
+      print_code(cf, attributes[i].info.code_attribute, file, indent+6);    
     }
   }
 }

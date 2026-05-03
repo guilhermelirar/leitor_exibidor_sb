@@ -26,11 +26,16 @@ void print_field_descriptor(FILE* out, const char* str, int* pos, int dimensions
 
 void print_utf8(FILE* out, const char* str);
 
-void print_operands(Reader *code_reader, u1 opc, FILE* out, int indent);
+void print_operands(const ClassFile* cf, Reader *code_reader,
+    u1 opc, FILE* out, int indent);
 
-void print_code(const Code_attribute* code, FILE* out, int indent);  
+void print_code(const ClassFile *cf, 
+    const Code_attribute* code, FILE* out, int indent);  
 
 void print_method_definition(const ClassFile* cf, method_info* m, FILE* out);
+
+
+void print_cp_value(u2 idx, const ClassFile *cf, FILE *file);
 
 void print_class_constant_pool(const ClassFile *cf, FILE *file);
 
