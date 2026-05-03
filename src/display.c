@@ -294,7 +294,7 @@ void print_operands(const ClassFile* cf, Reader *code_reader,
     print_cp_value(idx, cf, out);
   }
 
-if (opi->type == OP_LOCAL || opi->type == OP_LITERAL) {
+  if (opi->type == OP_LOCAL || opi->type == OP_LITERAL) {
     if (opi->operands == 2) {
       fprintf(out, "%d", (int16_t)read_u2(code_reader));
     } else {
@@ -318,7 +318,8 @@ if (opi->type == OP_LOCAL || opi->type == OP_LITERAL) {
     switch (opc) {
       // tableswitch
       case opc_tableswitch: {
-        while (code_reader->pos % 4 != 0) read_u1(code_reader);
+        while (code_reader->pos % 4 != 0) 
+          read_u1(code_reader); // 0 a 3 bytes de padding
         u4 default_offset = read_u4(code_reader);
         u4 low_byte = read_u4(code_reader);
         u4 high_byte = read_u4(code_reader);
@@ -336,6 +337,30 @@ if (opi->type == OP_LOCAL || opi->type == OP_LITERAL) {
         fprintf(out, "default: %-3d", default_offset + base_pc);
         break;
       }
+
+      case opc_lookupswitch:
+        while (code_reader->pos % 4 != 0) 
+          read_u1(code_reader); // 0 a 3 bytes de padding
+
+        int32_t default_offset = (int32_t)read_u4(code_reader);
+        int32_t npairs = (int32_t)read_u4(code_reader);
+        
+        fputc('\n', out);
+        print_indent(indent, out);
+        fprintf(out, "(%d pairs) \n", npairs);
+        
+        while (npairs--) {
+          int32_t match = (int32_t)read_u4(code_reader);
+          int32_t offset = (int32_t)read_u4(code_reader);
+        
+          print_indent(indent, out);
+          fprintf(out, "%4d: %d\n", (int32_t)match, (int32_t)offset + base_pc);
+        }
+        
+        print_indent(indent, out);
+        fprintf(out, "default: %d", default_offset + base_pc);
+        break;
+        
       default:
         break;
 
